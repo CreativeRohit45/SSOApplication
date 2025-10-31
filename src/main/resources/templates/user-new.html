@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Create New User</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Base Styles */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; line-height: 1.6; color: #343a40; }
+        /* Admin Navbar Styles */
+        .navbar { background-color: #343a40; padding: 0.8rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .navbar-brand { font-size: 1.4rem; font-weight: 600; color: #ffffff; text-decoration: none; }
+        .navbar-nav { list-style: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 1.5rem; }
+        .nav-link { text-decoration: none; color: #adb5bd; font-weight: 500; padding: 0.5rem 0; position: relative; transition: color 0.2s ease;}
+        .nav-link:hover { color: #ffffff; }
+        .nav-link.active { color: #ffffff; font-weight: 600; border-bottom: 2px solid #0d6efd; padding-bottom: calc(0.5rem - 2px);}
+        .logout-button { background-color: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background-color 0.3s ease; }
+        .logout-button:hover { background-color: #5a6268; }
+        /* Main Container */
+        .container { max-width: 600px; /* Standard form width */ margin: 2rem auto; padding: 2.5rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.07); }
+        h1 { color: #343a40; margin-bottom: 2rem; text-align: center; border-bottom: 1px solid #dee2e6; padding-bottom: 0.75rem;}
+        /* Form Styles */
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.6rem; font-weight: 600; color: #495057; font-size: 1rem; }
+        input[type="text"], input[type="email"], input[type="password"], select { width: 100%; padding: 0.85rem; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 1rem; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
+        input:focus, select:focus { border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
+        button[type="submit"] { display: block; width: 100%; padding: 0.85rem; background-color: #198754; /* Success green */ color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1.05rem; font-weight: 600; transition: background-color 0.3s ease; margin-top: 1.5rem;}
+        button[type="submit"]:hover { background-color: #157347; }
+        .cancel-link { display: block; margin-top: 1.5rem; color: #6c757d; text-decoration: none; text-align: center; }
+        .cancel-link:hover { text-decoration: underline; }
+        /* Error Message Style */
+        .error-message { padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.95rem; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; text-align: left; }
+    </style>
+</head>
+<body>
+
+<!-- Admin Navbar -->
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/admin}">Admin Panel</a>
+    <ul class="navbar-nav">
+        <li><a class="nav-link" th:href="@{/home}">Home (App)</a></li>
+        <li><a class="nav-link" th:href="@{/admin}">User Management</a></li>
+        <li><a class="nav-link" th:href="@{/admin/configure-oauth}">OAuth/OIDC</a></li>
+        <li><a class="nav-link" th:href="@{/admin/configure-jwt}">JWT</a></li>
+        <li><a class="nav-link" th:href="@{/admin/configure-saml}">SAML</a></li>
+        <li>
+            <form th:action="@{/logout}" method="post" style="margin:0;">
+                <button type="submit" class="logout-button">Logout</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<div class="container">
+    <h1>Create New User</h1>
+
+    <!-- Display error messages -->
+    <div th:if="${error}" class="error-message" th:text="${error}"></div>
+
+    <form th:action="@{/admin/users/create}" th:object="${user}" method="post">
+
+        <div class="form-group">
+            <label for="displayName">Display Name:</label>
+            <input type="text" id="displayName" th:field="*{displayName}" required />
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" th:field="*{email}" required />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" th:field="*{password}" required />
+        </div>
+
+        <div class="form-group">
+            <label for="confirmPassword">Confirm Password:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required />
+        </div>
+
+        <div class="form-group">
+            <label for="role">Role:</label>
+            <select id="role" th:field="*{role}" required>
+                <!-- Loop through roles provided by controller -->
+                <option th:each="roleOpt : ${allRoles}"
+                        th:value="${roleOpt.name()}"
+                        th:text="${roleOpt}">USER</option>
+            </select>
+        </div>
+
+        <button type="submit">Create User</button>
+    </form>
+
+    <a th:href="@{/admin}" class="cancel-link">Cancel</a>
+</div>
+
+</body>
+</html>
+

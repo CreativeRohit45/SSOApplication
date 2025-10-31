@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Configure Manual JWT</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Base Styles */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; line-height: 1.6; color: #343a40; }
+        /* Admin Navbar Styles */
+        .navbar { background-color: #343a40; padding: 0.8rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .navbar-brand { font-size: 1.4rem; font-weight: 600; color: #ffffff; text-decoration: none; }
+        .navbar-nav { list-style: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 1.5rem; }
+        .nav-link { text-decoration: none; color: #adb5bd; font-weight: 500; padding: 0.5rem 0; position: relative; transition: color 0.2s ease;}
+        .nav-link:hover { color: #ffffff; }
+        .nav-link.active { color: #ffffff; font-weight: 600; border-bottom: 2px solid #0d6efd; padding-bottom: calc(0.5rem - 2px);}
+        .logout-button { background-color: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background-color 0.3s ease; }
+        .logout-button:hover { background-color: #5a6268; }
+        /* Main Container */
+        .container { max-width: 960px; margin: 2rem auto; padding: 2.5rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.07); }
+        h1, h2 { color: #343a40; margin-bottom: 1.5rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.75rem; }
+        h1 { text-align: center; border-bottom: none; margin-bottom: 2rem;}
+        /* Config Form Styles */
+        .config-form { margin-top: 1rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.6rem; font-weight: 600; color: #495057; font-size: 1.05rem; }
+        label.inline-label { display: inline-block; margin-bottom: 0; vertical-align: middle;}
+        input[type="text"], input[type="url"], input[type="password"], textarea, select { width: 100%; padding: 0.85rem; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 1rem; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
+        input:focus, textarea:focus, select:focus { border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
+        .save-button { display: inline-block; padding: 0.85rem 1.75rem; background-color: #0d6efd; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1.05rem; font-weight: 600; transition: background-color 0.3s ease; }
+        .save-button:hover { background-color: #0b5ed7; }
+        .description { font-size: 0.9rem; color: #6c757d; margin-top: 0.35rem; }
+         /* Message Styles */
+        .message, .error-message { padding: 1rem; border-radius: 6px; margin: 1.5rem 0; font-size: 0.95rem; text-align: left; border: 1px solid; }
+        .error-message { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .message { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+        /* Toggle Switch Styles */
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; vertical-align: middle; }
+        .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
+        input:checked + .slider { background-color: #0d6efd; }
+        input:focus + .slider { box-shadow: 0 0 1px #0d6efd; }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .slider.round { border-radius: 34px; }
+        .slider.round:before { border-radius: 50%; }
+        .enable-label { margin-left: 8px; font-weight: 600; color: #495057; font-size: 1.05rem; cursor: pointer; vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/admin}">Admin Panel</a>
+    <ul class="navbar-nav">
+        <li><a class="nav-link" th:href="@{/home}">Home (App)</a></li>
+        <li><a class="nav-link" th:href="@{/admin}">User Management</a></li>
+        <li><a class="nav-link" th:href="@{/admin/configure-oauth}">OAuth/OIDC</a></li>
+        <li><a class="nav-link active" th:href="@{/admin/configure-jwt}">JWT</a></li>
+        <li><a class="nav-link" th:href="@{/admin/configure-saml}">SAML</a></li>
+        <li>
+            <form th:action="@{/logout}" method="post" style="margin:0;">
+                <button type="submit" class="logout-button">Logout</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<div class="container">
+    <h1>Configure Manual JWT Flow</h1>
+
+    <div th:if="${successMessage}" class="message" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="error-message" th:text="${errorMessage}"></div>
+
+    <form class="config-form" th:action="@{/admin/save-jwt}" th:object="${config}" method="post">
+        <input type="hidden" th:field="*{protocolType}" th:value="${T(com.example.demo.model.ProtocolType).JWT}" />
+        <input type="hidden" th:if="*{id != null}" th:field="*{id}" />
+
+        <!-- Enable Toggle -->
+        <div class="form-group" style="border-bottom: 1px solid #dee2e6; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <!-- REMOVED hidden input -->
+                <label class="switch">
+                    <!-- Checkbox sends 'true' ONLY when checked -->
+                    <input type="checkbox" id="jwtEnabled" name="enabled" value="true" th:checked="*{enabled}">
+                    <span class="slider round"></span>
+                </label>
+                <label class="enable-label" for="jwtEnabled">Enable Manual JWT Login Button</label>
+            </div>
+            <p class="description" style="margin-top: 0.5rem; padding-left: 70px;">Controls whether the 'Login with SSO (JWT)' button appears on the login page.</p>
+        </div>
+
+        <p class="description">Configure the settings for the manual JWT validation flow, typically used when the provider redirects back with a JWT directly.</p>
+
+        <div class="form-group">
+            <label for="jwtSsoUrl">Provider SSO URL</label>
+            <input type="url" id="jwtSsoUrl" th:field="*{jwtSsoUrl}" placeholder="Enter JWT SSO initiation URL" />
+            <p class="description">The URL to redirect users to for initiating this specific login flow.</p>
+        </div>
+        <div class="form-group">
+            <label for="jwtClientId">Client ID</label>
+            <input type="text" id="jwtClientId" th:field="*{clientId}" placeholder="Enter Client ID for this JWT app" />
+        </div>
+        <div class="form-group">
+            <label for="jwtClientSecret">Client Secret (if applicable)</label>
+            <input type="text" id="jwtClientSecret" th:field="*{clientSecret}" placeholder="Enter Client Secret for this JWT app" />
+        </div>
+        <div class="form-group">
+            <label for="jwtRedirectUri">Your Application's Redirect URI</label>
+            <input type="url" id="jwtRedirectUri" th:field="*{jwtRedirectUri}" placeholder="e.g., http://localhost:8080/login/jwt/callback" />
+            <p class="description">The callback URL registered with the provider for this specific JWT app.</p>
+        </div>
+        <div class="form-group">
+            <label for="jwtCertificateContent">Provider's Public Certificate (PEM Format)</label>
+            <textarea id="jwtCertificateContent" th:field="*{jwtCertificateContent}" rows="7" placeholder="Paste certificate content including -----BEGIN CERTIFICATE----- and -----END CERTIFICATE-----"></textarea>
+            <p class="description">Paste the full public certificate provided by miniOrange for signature validation.</p>
+        </div>
+        <div class="form-group">
+            <label for="jwtIssuerUri">Expected Issuer Claim in JWT</label>
+            <input type="url" id="jwtIssuerUri" th:field="*{issuerUri}" placeholder="Enter expected 'iss' value in the received JWT" />
+            <p class="description">Used for optional issuer validation within the callback handler.</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <button type="submit" class="save-button">Save JWT Config</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

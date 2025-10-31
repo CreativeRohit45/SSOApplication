@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Admin Panel - User Management</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Base Styles */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; line-height: 1.6; color: #343a40; }
+        /* Admin Navbar Styles */
+        .navbar { background-color: #343a40; /* Dark admin navbar */ padding: 0.8rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .navbar-brand { font-size: 1.4rem; font-weight: 600; color: #ffffff; text-decoration: none; }
+        .navbar-nav { list-style: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 1.5rem; /* Wider gap */ }
+        .nav-link { text-decoration: none; color: #adb5bd; /* Lighter text */ font-weight: 500; padding: 0.5rem 0; position: relative; transition: color 0.2s ease;}
+        .nav-link:hover { color: #ffffff; /* White on hover */ }
+        .nav-link.active { color: #ffffff; font-weight: 600; border-bottom: 2px solid #0d6efd; padding-bottom: calc(0.5rem - 2px);} /* Active style */
+        .logout-button { background-color: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background-color 0.3s ease; }
+        .logout-button:hover { background-color: #5a6268; }
+        /* Main Container */
+        .container { max-width: 1000px; /* Wider */ margin: 2rem auto; padding: 2.5rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.07); }
+        h1, h2 { color: #343a40; margin-bottom: 1.5rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.75rem; }
+        h1 { text-align: center; border-bottom: none; margin-bottom: 1rem;}
+        .controls-area { text-align: right; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #dee2e6; }
+        .create-link { display: inline-block; color: #fff; background-color: #0d6efd; border-color: #0d6efd; padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background-color 0.3s ease, border-color 0.3s ease; }
+        .create-link:hover { background-color: #0b5ed7; border-color: #0a58ca; text-decoration: none;}
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.95rem;}
+        th, td { border: 1px solid #dee2e6; padding: 12px 15px; text-align: left; vertical-align: middle; }
+        th { background-color: #e9ecef; font-weight: 600; color: #495057;}
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        tr:hover { background-color: #e9ecef; } /* Subtle hover */
+        .actions button, .actions a { margin-right: 6px; padding: 6px 12px; /* Slightly larger */ border-radius: 4px; font-size: 0.9em; border: none; cursor: pointer; }
+        .edit-button { color: #fff; background-color: #0d6efd; } /* Primary blue */
+        .edit-button:hover { background-color: #0b5ed7; }
+        .delete-link { display: inline-block; color: #fff; background-color: #dc3545; text-decoration: none;} /* Danger red */
+        .delete-link:hover { background-color: #c82333; }
+        /* Message Styles */
+        .message, .error-message { padding: 1rem; border-radius: 6px; margin: 1.5rem 0; font-size: 0.95rem; text-align: left; border: 1px solid; }
+        .error-message { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .message { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; } /* Bootstrap success green */
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); padding-top: 60px; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 30px; border: 1px solid #dee2e6; width: 90%; max-width: 500px; border-radius: 8px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .close-button { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; }
+        .close-button:hover, .close-button:focus { color: #343a40; text-decoration: none; cursor: pointer; }
+        .modal-content h2 { margin-top: 0; margin-bottom: 1.5rem; text-align: center; border: none; }
+        .modal-form .form-group { margin-bottom: 1rem; text-align: left; }
+        .modal-form label { margin-bottom: 5px; font-size: 0.95rem; display: block; font-weight: 600; color: #495057;}
+        .modal-form input[type="text"], .modal-form input[type="email"], .modal-form input[type="password"], .modal-form select { width: 100%; padding: 0.75rem; font-size: 0.95rem; border-radius: 6px; border: 1px solid #ced4da; box-sizing: border-box; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
+        .modal-form input:focus, .modal-form select:focus { border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
+        .modal-form button { margin-top: 1.5rem; width: 100%; padding: 0.75rem; background-color: #0d6efd; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color 0.3s ease; }
+        .modal-form button:hover { background-color: #0b5ed7; }
+        .password-note { font-size: 0.85rem; color: #6c757d; margin-top: 0.25rem; }
+
+    </style>
+</head>
+<body>
+
+<!-- Admin Navbar -->
+<nav class="navbar">
+    <a class="navbar-brand" th:href="@{/admin}">Admin Panel</a>
+    <ul class="navbar-nav">
+        <li><a class="nav-link" th:href="@{/home}">Home (App)</a></li>
+        <li><a class="nav-link active" th:href="@{/admin}">User Management</a></li>
+        <li><a class="nav-link" th:href="@{/admin/configure-oauth}">OAuth/OIDC</a></li>
+        <li><a class="nav-link" th:href="@{/admin/configure-jwt}">JWT</a></li>
+        <li><a class="nav-link" th:href="@{/admin/configure-saml}">SAML</a></li>
+        <li>
+            <form th:action="@{/logout}" method="post" style="margin:0;">
+                <button type="submit" class="logout-button">Logout</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<div class="container">
+    <h1>User Management</h1>
+
+    <div class="controls-area">
+        <!-- Ensure this link points to the correct controller method -->
+        <a th:href="@{/admin/users/new}" class="create-link">Create New User</a>
+    </div>
+
+    <!-- Display Flash Messages -->
+    <div th:if="${successMessage}" class="message" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="error-message" th:text="${errorMessage}"></div>
+
+    <!-- User Table -->
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Display Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Added IDs to cells for easier JS access -->
+        <tr th:each="user : ${users}" th:id="'user-row-' + ${user.id}">
+            <td th:text="${user.id}" th:id="'user-id-' + ${user.id}">1</td>
+            <td th:text="${user.displayName}" th:id="'user-displayname-' + ${user.id}">Test User</td>
+            <td th:text="${user.email}" th:id="'user-email-' + ${user.id}">test@example.com</td>
+            <td th:text="${user.role}" th:id="'user-role-' + ${user.id}">USER</td>
+            <td class="actions">
+                <!-- Pass user ID directly to JS function -->
+                <button type="button" class="edit-button" th:onclick="'openEditModal(' + ${user.id} + ')'">Edit</button>
+                <a th:href="@{/admin/users/delete/{id}(id=${user.id})}"
+                   class="delete-link"
+                   onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(users)}">
+            <td colspan="5" style="text-align:center; padding: 20px; color: #6c757d;">No other users found.</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- EDIT USER MODAL HTML -->
+<div id="editUserModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeEditModal()">&times;</span>
+        <h2>Edit User</h2>
+        <form id="editUserForm" th:action="@{/admin/users/update}" method="post" class="modal-form">
+            <input type="hidden" id="editUserId" name="id" />
+            <div class="form-group">
+                <label for="editDisplayName">Display Name:</label>
+                <input type="text" id="editDisplayName" name="displayName" required />
+            </div>
+            <div class="form-group">
+                <label for="editEmail">Email:</label>
+                <input type="email" id="editEmail" name="email" required />
+            </div>
+            <div class="form-group">
+                <label for="editRole">Role:</label>
+                <select id="editRole" name="role" required>
+                    <!-- Options populated by Thymeleaf from controller -->
+                    <option th:each="roleOpt : ${allRoles}"
+                            th:value="${roleOpt.name()}"
+                            th:text="${roleOpt}">USER</option>
+                </select>
+            </div>
+            <!-- ADDED PASSWORD FIELDS -->
+            <hr style="margin: 1.5rem 0;">
+            <div class="form-group">
+                <label for="editNewPassword">New Password:</label>
+                <input type="password" id="editNewPassword" name="newPassword" />
+                <p class="password-note">Leave blank to keep the current password.</p>
+            </div>
+            <div class="form-group">
+                <label for="editConfirmPassword">Confirm New Password:</label>
+                <input type="password" id="editConfirmPassword" name="confirmPassword" />
+            </div>
+            <!-- END ADDED PASSWORD FIELDS -->
+
+            <button type="submit">Update User</button>
+        </form>
+    </div>
+</div>
+
+<!-- JAVASCRIPT for Modal -->
+<script>
+    const modal = document.getElementById('editUserModal');
+    const form = document.getElementById('editUserForm');
+    const userIdInput = document.getElementById('editUserId');
+    const displayNameInput = document.getElementById('editDisplayName');
+    const emailInput = document.getElementById('editEmail');
+    const roleSelect = document.getElementById('editRole');
+    const newPasswordInput = document.getElementById('editNewPassword');
+    const confirmPasswordInput = document.getElementById('editConfirmPassword');
+
+    function openEditModal(userId) {
+        console.log("Opening modal for user ID:", userId);
+
+        // Get data directly from table cells using IDs
+        const displayName = document.getElementById('user-displayname-' + userId)?.innerText;
+        const email = document.getElementById('user-email-' + userId)?.innerText;
+        const role = document.getElementById('user-role-' + userId)?.innerText; // Role name (e.g., 'USER', 'ADMIN')
+
+        if (displayName === undefined || email === undefined || role === undefined) {
+             console.error("Could not find user data in table for ID:", userId);
+             alert("Error retrieving user data."); // Simple feedback
+             return;
+        }
+
+        console.log("Found data:", { userId, displayName, email, role });
+
+        // Populate the form
+        if (userIdInput) userIdInput.value = userId || '';
+        if (displayNameInput) displayNameInput.value = displayName || '';
+        if (emailInput) emailInput.value = email || '';
+        if (roleSelect) {
+             roleSelect.value = role || 'USER'; // Set selected option based on text content
+             console.log("Set role select to:", roleSelect.value);
+        } else {
+            console.error("Role select element not found");
+        }
+         // Clear password fields when opening
+         if(newPasswordInput) newPasswordInput.value = '';
+         if(confirmPasswordInput) confirmPasswordInput.value = '';
+
+
+        // Show the modal
+        if (modal) modal.style.display = 'block';
+        else console.error("Modal element not found");
+    }
+
+    function closeEditModal() {
+        if (modal) modal.style.display = 'none';
+         // Clear password fields when closing
+         if(newPasswordInput) newPasswordInput.value = '';
+         if(confirmPasswordInput) confirmPasswordInput.value = '';
+    }
+
+    // Close modal if user clicks outside
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            closeEditModal();
+        }
+    }
+</script>
+
+</body>
+</html>
+

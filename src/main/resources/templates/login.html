@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Base Styles */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: #ffffff; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.07); width: 100%; max-width: 420px; text-align: center; }
+        h1 { color: #343a40; margin-bottom: 2rem; }
+        /* Form Styles */
+        .form-group { margin-bottom: 1.5rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #495057; font-size: 0.95rem;}
+        input[type="text"], input[type="password"], input[type="email"] { width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid #ced4da; box-sizing: border-box; font-size: 1rem; }
+        input:focus { border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
+        button[type="submit"] { width: 100%; padding: 0.8rem; background-color: #0d6efd; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color 0.3s ease; }
+        button[type="submit"]:hover { background-color: #0b5ed7; }
+        /* Messages */
+        .message, .error-message { padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.95rem; text-align: left; border: 1px solid;}
+        .error-message { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .message { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+        /* Links */
+        .register-link { margin-top: 1.5rem; display: block; color: #0d6efd; text-decoration: none; font-size: 0.95rem;}
+        .register-link:hover { text-decoration: underline; }
+        /* Divider */
+        .divider { display: flex; align-items: center; text-align: center; color: #adb5bd; margin: 1.5rem 0; font-size: 0.9rem; font-weight: 500;}
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #dee2e6; }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+        /* SSO Buttons */
+        .sso-button, .sso-jwt-button, .sso-saml-button { display: block; width: 100%; padding: 0.8rem; margin-top: 0.75rem; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color 0.3s ease; text-decoration: none; box-sizing: border-box; }
+        .sso-button { background-color: #4285F4; } /* Google Blue */
+        .sso-button:hover { background-color: #3367D6; }
+        .sso-jwt-button { background-color: #ff9900; } /* Orange */
+        .sso-jwt-button:hover { background-color: #cc7a00; }
+        .sso-saml-button { background-color: #28a745; } /* Green */
+        .sso-saml-button:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Login</h1>
+
+    <div th:if="${param.error}" class="error-message">
+        <span th:if="${param.error == 'jwt_invalid'}">SSO login failed: Invalid token.</span>
+        <span th:if="${param.error == 'auth_conversion_failed'}">SSO login failed: Could not process user details.</span>
+        <span th:if="${param.error == 'sso_unexpected_error'}">SSO login failed: An unexpected error occurred.</span>
+        <span th:unless="${#strings.startsWith(param.error, 'jwt_') or #strings.startsWith(param.error, 'auth_') or #strings.startsWith(param.error, 'sso_')}">
+                Invalid email or password. </span>
+    </div>
+    <div th:if="${param.logout}" class="message">
+        You have been logged out.
+    </div>
+    <div th:if="${param.registered}" class="message">
+        Registration successful. Please log in.
+    </div>
+
+    <form th:action="@{/login}" method="post">
+        <div class="form-group">
+            <label for="username">Email:</label>
+            <input type="email" id="username" name="username" required/>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required/>
+        </div>
+        <button type="submit">Sign In</button>
+    </form>
+
+    <div class="divider" th:if="${isOidcEnabled or isJwtEnabled or isSamlEnabled}">OR Sign in with</div>
+
+    <a th:if="${isOidcEnabled}" th:href="@{/oauth2/authorization/miniorange}" class="sso-button">SSO (OIDC)</a>
+
+    <a th:if="${isJwtEnabled}" th:href="@{/sso/jwt/login}" class="sso-jwt-button">SSO (JWT)</a>
+
+    <a th:if="${isSamlEnabled}" th:href="@{/saml2/authenticate/miniorange-saml}" class="sso-saml-button">SSO (SAML)</a>
+
+
+    <a th:href="@{/register}" class="register-link">Create an account</a>
+</div>
+</body>
+</html>
