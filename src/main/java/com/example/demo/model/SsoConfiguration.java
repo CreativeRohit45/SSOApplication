@@ -13,7 +13,7 @@ public class SsoConfiguration {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "protocol_type", nullable = false, unique = true)
+    @Column(name = "protocol_type", nullable = false)
     private ProtocolType protocolType;
 
     @Column(nullable = false)

@@ -100,7 +100,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 logger.info("Generating displayName from email prefix: {}", displayNameToSet);
             }
             newUser.setDisplayName(displayNameToSet);
-            newUser.setRole(Role.USER);
+            newUser.setRole(Role.END_USER);
             newUser.setPassword("SSO_USER_NO_PASSWORD_" + System.currentTimeMillis());
             newUser.setTenant(tenant);
             try {

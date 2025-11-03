@@ -1,9 +1,7 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.ProtocolType; // Import
-import com.example.demo.model.Role;
-import com.example.demo.model.SsoConfiguration; // Import
-import com.example.demo.model.User;
+import com.example.demo.config.TenantContext;
+import com.example.demo.model.*;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.SsoConfigurationService; // Import
 import jakarta.servlet.http.HttpServletRequest;
@@ -91,6 +89,13 @@ public class JwtSsoController {
 
         logger.info("Received JWT callback token for manual flow.");
 
+        Tenant tenant = TenantContext.getCurrentTenant();
+        if (tenant == null) {
+            logger.error("JWT login failed, no tenant context found.");
+            response.sendRedirect("/login?error=sso_unexpected_error");
+            return;
+        }
+
         SsoConfiguration jwtConfig = ssoConfigurationService.findByProtocolType(ProtocolType.JWT).orElse(null);
 
         try {
@@ -133,7 +138,8 @@ public class JwtSsoController {
                             displayNameToSet = (atIndex > 0) ? email.substring(0, atIndex) : email;
                         }
                         newUser.setDisplayName(displayNameToSet);
-                        newUser.setRole(Role.USER);
+                        newUser.setRole(Role.END_USER);
+                        newUser.setTenant(tenant);
                         newUser.setPassword("JWT_USER_NO_PASSWORD_" + System.currentTimeMillis());
                         try {
                             User savedUser = userRepository.save(newUser);

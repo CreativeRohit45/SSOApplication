@@ -1,9 +1,7 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.ProtocolType;
-import com.example.demo.model.Role;
-import com.example.demo.model.SsoConfiguration; // Ensure this is imported
-import com.example.demo.model.User;
+import com.example.demo.config.TenantContext;
+import com.example.demo.model.*;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.SsoConfigurationService; // Ensure this is imported
 import org.slf4j.Logger;
@@ -101,6 +99,13 @@ public class AuthController {
                                @RequestParam("confirmPassword") String confirmPassword,
                                Model model) {
 
+        Tenant tenant = TenantContext.getCurrentTenant();
+        if (tenant == null) {
+            model.addAttribute("error", "Registration is not allowed on this domain.");
+            model.addAttribute("user", user);
+            return "register";
+        }
+
         if (!user.getPassword().equals(confirmPassword)) {
 
             model.addAttribute("error", "Passwords do not match");
@@ -109,14 +114,15 @@ public class AuthController {
             return "register";
         }
 
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            model.addAttribute("error", "Email is already in use");
+        if (userRepository.findByEmailAndTenant(user.getEmail(), tenant).isPresent()) {
+            model.addAttribute("error", "Email is already in use for this account.");
             model.addAttribute("user", user);
             return "register";
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(Role.USER);
+        user.setRole(Role.END_USER); // <-- FIX
+        user.setTenant(tenant); // <-- FIX
 
         userRepository.save(user);
 

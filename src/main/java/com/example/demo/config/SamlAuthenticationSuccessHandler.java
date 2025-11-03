@@ -90,7 +90,7 @@ public class SamlAuthenticationSuccessHandler implements AuthenticationSuccessHa
             return;
         }
 
-        Optional<User> userOptional = userRepository.findByEmail(email);
+        Optional<User> userOptional = userRepository.findByEmailAndTenant(email, tenant);
 
         User user;
         if (userOptional.isEmpty()) {

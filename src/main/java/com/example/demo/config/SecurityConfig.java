@@ -1,9 +1,6 @@
 package com.example.demo.config;
 
-import com.example.demo.model.Role;
-import com.example.demo.model.User;
-import com.example.demo.model.SsoConfiguration;
-import com.example.demo.model.ProtocolType;
+import com.example.demo.model.*;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CustomOAuth2UserService;
 import com.example.demo.service.SsoConfigurationService;
@@ -344,6 +341,19 @@ public class SecurityConfig {
             String userEmail = userEmailRef.get();
             Map<String, ?> userAttributes = userAttributesRef.get();
 
+            Tenant tenant = TenantContext.getCurrentTenant(); // <-- ADD THIS
+            if (tenant == null && userEmail != null) {
+                // This might be a SUPER_ADMIN login, check for null tenant
+                User superAdmin = userRepository.findByEmailAndTenantIsNull(userEmail).orElse(null);
+                if (superAdmin != null) {
+                    mappedAuthorities.addAll(superAdmin.getAuthorities());
+                    return mappedAuthorities;
+                }
+                // If not a super admin, and no tenant, it's an error
+                logger.warn("No tenant in context for SSO user {}", userEmail);
+                return mappedAuthorities;
+            }
+
             if (userEmail != null) {
                 // --- JIT Provisioning Logic ---
                 User user = userRepository.findByEmail(userEmail).orElseGet(() -> {
@@ -391,8 +401,9 @@ public class SecurityConfig {
                         logger.info("GrantedAuthoritiesMapper - Generating displayName from email prefix: {}", displayNameToSet);
                     }
                     newUser.setDisplayName(displayNameToSet);
-                    newUser.setRole(Role.USER);
+                    newUser.setRole(Role.END_USER);
                     newUser.setPassword("SSO_USER_NO_PASSWORD_" + System.currentTimeMillis());
+                    newUser.setTenant(tenant);
 
                     try {
                         logger.info("GrantedAuthoritiesMapper - Attempting to save new user...");

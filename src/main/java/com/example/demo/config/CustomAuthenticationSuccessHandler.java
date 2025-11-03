@@ -63,12 +63,18 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         boolean isAdmin = authorities.stream()
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
 
-        if (isAdmin) {
-            logger.info("Redirecting user to /admin");
+        if (roles.contains("ROLE_SUPER_ADMIN")) {
+            logger.info("Redirecting SUPER_ADMIN to /super-admin");
+            response.sendRedirect("/super-admin");
+        } else if (roles.contains("ROLE_CUSTOMER_ADMIN")) {
+            logger.info("Redirecting CUSTOMER_ADMIN to /admin");
             response.sendRedirect("/admin");
-        } else {
-            logger.info("Redirecting user to /home");
+        } else if (roles.contains("ROLE_END_USER")) {
+            logger.info("Redirecting END_USER to /home");
             response.sendRedirect("/home");
+        } else {
+            logger.warn("User has no recognized role, redirecting to /login");
+            response.sendRedirect("/login?error=no_role");
         }
     }
 }
