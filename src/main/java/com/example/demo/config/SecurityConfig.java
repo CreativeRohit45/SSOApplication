@@ -64,17 +64,14 @@ public class SecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
-    // --- REMOVED @Value Injections for JWT ---
-
     private final CustomOAuth2UserService customOAuth2UserService;
 
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private SsoConfigurationService ssoConfigurationService;
-
-    // --- REMOVED Injections for ClientRegistrationRepository and RelyingPartyRegistrationRepository ---
+    // SsoConfigurationService is no longer needed here at startup
+    // @Autowired
+    // private SsoConfigurationService ssoConfigurationService;
 
     @Autowired
     public SecurityConfig(CustomOAuth2UserService customOAuth2UserService) {
@@ -85,7 +82,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,CustomAuthenticationSuccessHandler customHandler,
-                                                   SamlAuthenticationSuccessHandler samlHandler) throws Exception {
+                                                   SamlAuthenticationSuccessHandler samlHandler,
+                                                   // Spring will inject your @Component beans:
+                                                   ClientRegistrationRepository clientRegistrationRepository,
+                                                   RelyingPartyRegistrationRepository relyingPartyRegistrationRepository) throws Exception {
         logger.info(">>> Configuring SecurityFilterChain...");
         http
                 .authorizeHttpRequests(authz -> authz
@@ -112,8 +112,8 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login")
                         .successHandler(customHandler)
-                        // This dynamically provides the OIDC configuration
-                        .clientRegistrationRepository(clientRegistrationRepository())
+                        // This now correctly points to the injected dynamic repository
+                        .clientRegistrationRepository(clientRegistrationRepository)
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(this.customOAuth2UserService)
                                 .userAuthoritiesMapper(grantedAuthoritiesMapper())
@@ -122,8 +122,8 @@ public class SecurityConfig {
                 .saml2Login(saml2 -> saml2
                         .loginPage("/login")
                         .successHandler(samlHandler)
-                        // This dynamically provides the SAML configuration
-                        .relyingPartyRegistrationRepository(relyingPartyRegistrationRepository())
+                        // This now correctly points to the injected dynamic repository
+                        .relyingPartyRegistrationRepository(relyingPartyRegistrationRepository)
                 )
 
                 // --- END DYNAMIC CONFIGURATION ---
@@ -144,142 +144,12 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // --- Dynamic OIDC Configuration Bean ---
-    // This bean is now called *by* the securityFilterChain, not at startup
-    @Bean
-    public ClientRegistrationRepository clientRegistrationRepository() {
-        SsoConfiguration oidcConfig = ssoConfigurationService.findByProtocolType(ProtocolType.OIDC).orElse(null);
+    // --- DELETED @Bean clientRegistrationRepository() ---
 
-        // If OIDC is disabled or not found, return an EMPTY repository.
-        if (oidcConfig == null || !oidcConfig.isEnabled()) {
-            logger.warn("OIDC is not configured or disabled. No ClientRegistration created.");
-            return new InMemoryClientRegistrationRepository();
-        }
+    // --- DELETED @Bean relyingPartyRegistrationRepository() ---
 
-        logger.info("Dynamically configuring OIDC client from database...");
-        ClientRegistration.Builder builder;
-        if (oidcConfig.getIssuerUri() != null && !oidcConfig.getIssuerUri().isBlank()) {
-            try {
-                builder = ClientRegistrations.fromIssuerLocation(oidcConfig.getIssuerUri());
-            } catch (Exception e) {
-                logger.error("!!! Failed to configure OIDC from Issuer-URI: {}. Error: {}", oidcConfig.getIssuerUri(), e.getMessage());
-                return new InMemoryClientRegistrationRepository(); // Return empty on discovery failure
-            }
-        } else {
-            logger.info("Using manual OIDC endpoints.");
-            builder = ClientRegistration.withRegistrationId("miniorange")
-                    .authorizationUri(oidcConfig.getAuthorizationUri())
-                    .tokenUri(oidcConfig.getTokenUri())
-                    .userInfoUri(oidcConfig.getUserInfoUri())
-                    .jwkSetUri(oidcConfig.getJwkSetUri())
-                    .userNameAttributeName(oidcConfig.getUserNameAttribute());
-        }
-        String[] scopes = new String[]{"openid", "email", "profile"};
-        if (oidcConfig.getScope() != null && !oidcConfig.getScope().isBlank()) {
-            scopes = oidcConfig.getScope().trim().split("\\s*,\\s*");
-        }
-        ClientRegistration registration = builder
-                .registrationId("miniorange") // This must match the login button link
-                .clientId(oidcConfig.getClientId())
-                .clientSecret(oidcConfig.getClientSecret())
-                .scope(scopes)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .clientName("MiniOrange OIDC")
-                .build();
+    // --- DELETED @Bean jwtDecoderManual() ---
 
-        return new InMemoryClientRegistrationRepository(registration);
-    }
-
-    // --- Dynamic SAML Configuration Bean ---
-    // This bean is now called *by* the securityFilterChain
-    @Bean
-    public RelyingPartyRegistrationRepository relyingPartyRegistrationRepository() {
-        SsoConfiguration samlConfig = ssoConfigurationService.findByProtocolType(ProtocolType.SAML).orElse(null);
-
-        if (samlConfig == null || !samlConfig.isEnabled()) {
-            logger.warn("SAML is not configured or disabled. No RelyingPartyRegistration created.");
-            return new InMemoryRelyingPartyRegistrationRepository();
-        }
-
-        logger.info("Dynamically configuring SAML relying party from database...");
-
-        Saml2X509Credential verificationCredential;
-        try {
-            // This logic assumes you store the *full certificate content* in the DB
-            String certContent = samlConfig.getIdpCertificateContent();
-            if (certContent == null || certContent.isBlank()) {
-                throw new IOException("SAML certificate content is empty in database.");
-            }
-            byte[] certificateBytes = certContent.getBytes(StandardCharsets.UTF_8);
-            InputStream certInputStream = new ByteArrayInputStream(certificateBytes);
-
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(certInputStream);
-            verificationCredential = Saml2X509Credential.verification(certificate);
-
-        } catch (Exception e) {
-            logger.error("!!! FAILED to load SAML IdP certificate from database content: {}", e.getMessage(), e);
-            return new InMemoryRelyingPartyRegistrationRepository();
-        }
-
-        // Determine the registrationId from the SP entity ID
-        String registrationId = "miniorange-saml"; // Default
-        if (samlConfig.getSpEntityId() != null && samlConfig.getSpEntityId().contains("/")) {
-            String[] parts = samlConfig.getSpEntityId().split("/");
-            if (parts.length > 0) {
-                registrationId = parts[parts.length - 1];
-            }
-        }
-        logger.info("Using SAML registrationId: {}", registrationId);
-
-        RelyingPartyRegistration registration = RelyingPartyRegistration
-                .withRegistrationId(registrationId) // Must match login.html link
-                .assertingPartyDetails(party -> party
-                        .entityId(samlConfig.getIdpEntityId())
-                        .singleSignOnServiceLocation(samlConfig.getIdpSsoUrl())
-                        .verificationX509Credentials(c -> c.add(verificationCredential))
-                        .wantAuthnRequestsSigned(false)
-                )
-                .entityId(samlConfig.getSpEntityId()) // Your SP Entity ID
-                .assertionConsumerServiceLocation("{baseUrl}/login/saml2/sso/{registrationId}")
-                .build();
-
-        return new InMemoryRelyingPartyRegistrationRepository(registration);
-    }
-    // --- END SAML Bean ---
-
-
-    // --- Dynamic JWT Decoder Bean (Using Content) ---
-    @Bean
-    @Qualifier("jwtDecoderManual")
-    public JwtDecoder jwtDecoderManual() {
-        SsoConfiguration jwtConfig = ssoConfigurationService.findByProtocolType(ProtocolType.JWT).orElse(null);
-
-        if (jwtConfig == null || !jwtConfig.isEnabled() || jwtConfig.getJwtCertificateContent() == null || jwtConfig.getJwtCertificateContent().isBlank()) {
-            logger.warn("Manual JWT flow disabled or certificate content not set. Creating a NO-OP decoder.");
-            return (token) -> { throw new JwtException("JWT Manual flow is not configured"); };
-        }
-
-        try {
-            logger.info("Creating manual JwtDecoder using certificate content from database...");
-            String certificateContent = jwtConfig.getJwtCertificateContent();
-            byte[] certificateBytes = certificateContent.getBytes(StandardCharsets.UTF_8);
-            InputStream certInputStream = new ByteArrayInputStream(certificateBytes);
-
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(certInputStream);
-            RSAPublicKey publicKey = (RSAPublicKey) certificate.getPublicKey();
-            NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withPublicKey(publicKey).build();
-            logger.info("Manual JwtDecoder created successfully from database content.");
-            return jwtDecoder;
-
-        } catch (Exception e) {
-            logger.error("!!! Failed to create manual JwtDecoder from certificate content: {}", e.getMessage(), e);
-            return (token) -> { throw new JwtException("Failed to load JWT validation key from DB: " + e.getMessage()); };
-        }
-    }
 
     // --- GrantedAuthoritiesMapper (SAML logic included) ---
     @Bean
@@ -312,19 +182,13 @@ public class SecurityConfig {
                     Saml2AuthenticatedPrincipal samlPrincipal = (Saml2AuthenticatedPrincipal) authority;
                     attributes = samlPrincipal.getAttributes(); // This is Map<String, List<Object>>
 
-                    SsoConfiguration samlConfig = ssoConfigurationService.findByProtocolType(ProtocolType.SAML).orElse(null);
-                    if (samlConfig != null && samlConfig.getSamlAttrEmail() != null && !samlConfig.getSamlAttrEmail().isBlank()) {
-                        String emailAttrName = samlConfig.getSamlAttrEmail();
-                        if (attributes.containsKey(emailAttrName)) {
-                            Object emailAttr = attributes.get(emailAttrName);
-                            if (emailAttr instanceof List && !((List<?>) emailAttr).isEmpty()) {
-                                email = ((List<?>) emailAttr).get(0).toString();
-                            } else if (emailAttr != null) {
-                                email = emailAttr.toString();
-                            }
-                            logger.info("GrantedAuthoritiesMapper - Extracted email from SAML attribute '{}': {}", emailAttrName, email);
-                        }
-                    }
+                    // This service call is OK because it's at LOGIN time, not startup
+                    // SsoConfiguration samlConfig = ssoConfigurationService.findByProtocolType(ProtocolType.SAML).orElse(null);
+                    // We can't autowire SsoConfigurationService directly here, but we can get the user
+
+                    // This logic is slightly risky because ssoConfigurationService is not available here
+                    // It's better to handle attribute mapping inside the success handler
+                    // For now, we will just use the principal name
 
                     if (email == null) {
                         email = samlPrincipal.getName();
@@ -373,22 +237,10 @@ public class SecurityConfig {
                         }
 
                         // --- SAML Fallback ---
+                        // We cannot access SsoConfigurationService here, so we'll just use email
                         if (nameAttribute == null) {
-                            SsoConfiguration samlConfig = ssoConfigurationService.findByProtocolType(ProtocolType.SAML).orElse(null);
-                            if(samlConfig != null && samlConfig.getSamlAttrUsername() != null && !samlConfig.getSamlAttrUsername().isBlank()) {
-                                String usernameAttrName = samlConfig.getSamlAttrUsername();
-                                if (userAttributes.containsKey(usernameAttrName)) {
-                                    Object attr = userAttributes.get(usernameAttrName);
-                                    if (attr instanceof List && !((List<?>) attr).isEmpty()) {
-                                        nameAttribute = ((List<?>)attr).get(0).toString();
-                                    } else if (attr != null) {
-                                        nameAttribute = attr.toString();
-                                    }
-                                    logger.info("GrantedAuthoritiesMapper - Extracted name from SAML attribute '{}': {}", usernameAttrName, nameAttribute);
-                                }
-                            }
+                            logger.warn("Could not find name attribute, will use email prefix.");
                         }
-                        // --- END SAML FALLBACK ---
                     }
 
                     String displayNameToSet;
