@@ -354,9 +354,9 @@ public class SecurityConfig {
                 return mappedAuthorities;
             }
 
-            if (userEmail != null) {
+            if (userEmail != null && tenant != null) {
                 // --- JIT Provisioning Logic ---
-                User user = userRepository.findByEmail(userEmail).orElseGet(() -> {
+                User user = userRepository.findByEmailAndTenant(userEmail, tenant).orElseGet(() -> {
                     logger.warn("GrantedAuthoritiesMapper - User not found in DB for email: {}. Creating new user.", userEmail);
                     User newUser = new User();
                     newUser.setEmail(userEmail);

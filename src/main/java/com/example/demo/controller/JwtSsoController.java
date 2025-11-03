@@ -125,7 +125,7 @@ public class JwtSsoController {
             }
 
             // 3. Find or Create User (JIT Provisioning)
-            User user = userRepository.findByEmail(email)
+            User user = userRepository.findByEmailAndTenant(email, tenant)
                     .orElseGet(() -> {
                         logger.warn("Manual JWT Flow - User not found in DB for email: {}. Creating.", email);
                         User newUser = new User();
