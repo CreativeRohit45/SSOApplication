@@ -6,36 +6,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Base Styles */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; line-height: 1.6; color: #343a40; }
-        /* Admin Navbar Styles */
-        .navbar { background-color: #343a40; padding: 0.8rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .navbar-brand { font-size: 1.4rem; font-weight: 600; color: #ffffff; text-decoration: none; }
-        .navbar-nav { list-style: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 1.5rem; }
-        .nav-link { text-decoration: none; color: #adb5bd; font-weight: 500; padding: 0.5rem 0; position: relative; transition: color 0.2s ease;}
-        .nav-link:hover { color: #ffffff; }
-        .nav-link.active { color: #ffffff; font-weight: 600; border-bottom: 2px solid #0d6efd; padding-bottom: calc(0.5rem - 2px);}
-        .logout-button { background-color: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background-color 0.3s ease; }
-        .logout-button:hover { background-color: #5a6268; }
-        /* Main Container */
-        .container { max-width: 600px; /* Standard form width */ margin: 2rem auto; padding: 2.5rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.07); }
-        h1 { color: #343a40; margin-bottom: 2rem; text-align: center; border-bottom: 1px solid #dee2e6; padding-bottom: 0.75rem;}
-        /* Form Styles */
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); margin: 0; line-height: 1.6; color: #2c3e50; min-height: 100vh; }
+        .navbar { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); padding: 1rem 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .navbar-brand { font-size: 1.5rem; font-weight: 700; color: #ffffff; text-decoration: none; letter-spacing: 0.5px; }
+        .navbar-nav { list-style: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+        .nav-link { text-decoration: none; color: #bdc3c7; font-weight: 500; padding: 0.5rem 0; position: relative; transition: color 0.3s ease; }
+        .nav-link:hover { color: #3498db; }
+        .nav-link.active { color: #3498db; font-weight: 600; }
+        .nav-link.active::after { content: ''; position: absolute; bottom: -0.5rem; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #3498db, #2980b9); }
+        .logout-button { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(231,76,60,0.3); }
+        .logout-button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(231,76,60,0.4); }
+        .container { max-width: 700px; margin: 2.5rem auto; padding: 3rem; background-color: #ffffff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); animation: slideUp 0.5s ease; }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        h1 { color: #2c3e50; margin: 0 0 2rem 0; font-size: 1.8rem; font-weight: 700; text-align: center; border-bottom: 2px solid #ecf0f1; padding-bottom: 1rem; }
         .form-group { margin-bottom: 1.5rem; }
-        label { display: block; margin-bottom: 0.6rem; font-weight: 600; color: #495057; font-size: 1rem; }
-        input[type="text"], input[type="email"], input[type="password"], select { width: 100%; padding: 0.85rem; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 1rem; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
-        input:focus, select:focus { border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
-        button[type="submit"] { display: block; width: 100%; padding: 0.85rem; background-color: #198754; /* Success green */ color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1.05rem; font-weight: 600; transition: background-color 0.3s ease; margin-top: 1.5rem;}
-        button[type="submit"]:hover { background-color: #157347; }
-        .cancel-link { display: block; margin-top: 1.5rem; color: #6c757d; text-decoration: none; text-align: center; }
-        .cancel-link:hover { text-decoration: underline; }
-        /* Error Message Style */
-        .error-message { padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.95rem; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; text-align: left; }
+        label { display: block; margin-bottom: 0.6rem; font-weight: 600; color: #34495e; font-size: 1rem; }
+        input[type="text"], input[type="email"], input[type="password"], select { width: 100%; padding: 0.85rem; border: 1.5px solid #ecf0f1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; transition: all 0.2s ease; background-color: #f8f9fa; }
+        input:focus, select:focus { border-color: #3498db; background-color: #ffffff; outline: 0; box-shadow: 0 0 0 3px rgba(52,152,219,0.1); }
+        button[type="submit"] { display: block; width: 100%; padding: 0.9rem; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s ease; margin-top: 1.5rem; box-shadow: 0 4px 12px rgba(39,174,96,0.3); }
+        button[type="submit"]:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(39,174,96,0.4); }
+        .cancel-link { display: block; margin-top: 1.5rem; color: #7f8c8d; text-decoration: none; text-align: center; font-weight: 500; transition: all 0.2s ease; }
+        .cancel-link:hover { color: #34495e; text-decoration: underline; }
+        .error-message { padding: 1.2rem 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.95rem; background-color: #fadbd8; color: #78281f; border-left: 4px solid #e74c3c; text-align: left; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 1rem; }
+            .navbar-nav { gap: 1rem; justify-content: center; }
+            .container { margin: 1rem; padding: 1.5rem; }
+            h1 { font-size: 1.5rem; }
+            .form-group { margin-bottom: 1rem; }
+        }
     </style>
 </head>
 <body>
 
-<!-- Admin Navbar -->
 <nav class="navbar">
     <a class="navbar-brand" th:href="@{/admin}">Admin Panel</a>
     <ul class="navbar-nav">
@@ -55,11 +60,9 @@
 <div class="container">
     <h1>Create New User</h1>
 
-    <!-- Display error messages -->
     <div th:if="${error}" class="error-message" th:text="${error}"></div>
 
     <form th:action="@{/admin/users/create}" th:object="${user}" method="post">
-
         <div class="form-group">
             <label for="displayName">Display Name:</label>
             <input type="text" id="displayName" th:field="*{displayName}" required />
@@ -83,7 +86,6 @@
         <div class="form-group">
             <label for="role">Role:</label>
             <select id="role" th:field="*{role}" required>
-                <!-- Loop through roles provided by controller -->
                 <option th:each="roleOpt : ${allRoles}"
                         th:value="${roleOpt.name()}"
                         th:text="${roleOpt}">USER</option>
@@ -98,4 +100,3 @@
 
 </body>
 </html>
-

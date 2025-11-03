@@ -97,7 +97,7 @@ public class SecurityConfig {
                                 "/sso/jwt/login", "/login/jwt/callback",
                                 "/css/**", "/js/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/home").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/home", "/oauth-test-results").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

@@ -5,28 +5,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 1rem 0; /* Add padding for small screens */
+            padding: 1rem;
         }
         .container {
             background: #ffffff;
             padding: 2.5rem;
             border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             text-align: center;
+            animation: slideUp 0.5s ease;
         }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         h1 {
-            color: #333;
+            color: #2c3e50;
             margin-bottom: 2rem;
+            font-size: 1.8rem;
+            font-weight: 700;
         }
         .form-group {
             margin-bottom: 1.5rem;
@@ -34,53 +39,75 @@
         }
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 0.6rem;
             font-weight: 600;
-            color: #555;
+            color: #34495e;
+            font-size: 0.95rem;
         }
         input[type="text"],
         input[type="password"],
         input[type="email"] {
             width: 100%;
-            padding: 12px;
+            padding: 0.85rem;
             border-radius: 6px;
-            border: 1px solid #ddd;
-            box-sizing: border-box; /* Important */
+            border: 1.5px solid #ecf0f1;
+            box-sizing: border-box;
             font-size: 1rem;
+            transition: all 0.2s ease;
+            background-color: #f8f9fa;
+        }
+        input:focus {
+            border-color: #667eea;
+            background-color: #ffffff;
+            outline: 0;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         button {
             width: 100%;
-            padding: 12px;
-            background-color: #007bff;
+            padding: 0.85rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-size: 1rem;
             font-weight: 600;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            margin-top: 1.5rem;
         }
         button:hover {
-            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
         }
         .login-link {
             margin-top: 1.5rem;
             display: block;
-            color: #007bff;
+            color: #667eea;
             text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
         }
         .login-link:hover {
+            transform: translateY(-1px);
             text-decoration: underline;
         }
         .error-message {
-            padding: 1rem;
-            border-radius: 6px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
             margin-bottom: 1.5rem;
             font-size: 0.95rem;
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background-color: #fadbd8;
+            color: #78281f;
+            border-left: 4px solid #e74c3c;
             text-align: left;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @media (max-width: 768px) {
+            .container { padding: 1.5rem; }
+            h1 { font-size: 1.5rem; }
+            .form-group { margin-bottom: 1rem; }
         }
     </style>
 </head>
@@ -88,16 +115,13 @@
 <div class="container">
     <h1>Create Account</h1>
 
-    <!-- Display error messages (e.g., passwords don't match) -->
     <div th:if="${error}" class="error-message">
         <span th:text="${error}">Error message goes here</span>
     </div>
 
     <form th:action="@{/register}" th:object="${user}" method="post">
         <div class="form-group">
-            <!-- Label says "Username" -->
             <label for="displayName">Username:</label>
-            <!-- Field maps to 'displayName' in the User object -->
             <input type="text" id="displayName" th:field="*{displayName}" required/>
         </div>
         <div class="form-group">

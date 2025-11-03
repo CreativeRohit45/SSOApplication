@@ -2,124 +2,387 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-    <title>Admin Panel - User Management</title>
+    <title>Admin Control Center</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Base Styles */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; line-height: 1.6; color: #343a40; }
-        /* Admin Navbar Styles */
-        .navbar { background-color: #343a40; /* Dark admin navbar */ padding: 0.8rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .navbar-brand { font-size: 1.4rem; font-weight: 600; color: #ffffff; text-decoration: none; }
-        .navbar-nav { list-style: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 1.5rem; /* Wider gap */ }
-        .nav-link { text-decoration: none; color: #adb5bd; /* Lighter text */ font-weight: 500; padding: 0.5rem 0; position: relative; transition: color 0.2s ease;}
-        .nav-link:hover { color: #ffffff; /* White on hover */ }
-        .nav-link.active { color: #ffffff; font-weight: 600; border-bottom: 2px solid #0d6efd; padding-bottom: calc(0.5rem - 2px);} /* Active style */
-        .logout-button { background-color: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background-color 0.3s ease; }
-        .logout-button:hover { background-color: #5a6268; }
-        /* Main Container */
-        .container { max-width: 1000px; /* Wider */ margin: 2rem auto; padding: 2.5rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.07); }
-        h1, h2 { color: #343a40; margin-bottom: 1.5rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.75rem; }
-        h1 { text-align: center; border-bottom: none; margin-bottom: 1rem;}
-        .controls-area { text-align: right; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #dee2e6; }
-        .create-link { display: inline-block; color: #fff; background-color: #0d6efd; border-color: #0d6efd; padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background-color 0.3s ease, border-color 0.3s ease; }
-        .create-link:hover { background-color: #0b5ed7; border-color: #0a58ca; text-decoration: none;}
-        /* Table Styles */
-        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.95rem;}
-        th, td { border: 1px solid #dee2e6; padding: 12px 15px; text-align: left; vertical-align: middle; }
-        th { background-color: #e9ecef; font-weight: 600; color: #495057;}
-        tr:nth-child(even) { background-color: #f8f9fa; }
-        tr:hover { background-color: #e9ecef; } /* Subtle hover */
-        .actions button, .actions a { margin-right: 6px; padding: 6px 12px; /* Slightly larger */ border-radius: 4px; font-size: 0.9em; border: none; cursor: pointer; }
-        .edit-button { color: #fff; background-color: #0d6efd; } /* Primary blue */
-        .edit-button:hover { background-color: #0b5ed7; }
-        .delete-link { display: inline-block; color: #fff; background-color: #dc3545; text-decoration: none;} /* Danger red */
-        .delete-link:hover { background-color: #c82333; }
-        /* Message Styles */
-        .message, .error-message { padding: 1rem; border-radius: 6px; margin: 1.5rem 0; font-size: 0.95rem; text-align: left; border: 1px solid; }
-        .error-message { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-        .message { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; } /* Bootstrap success green */
-        /* Modal Styles */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); padding-top: 60px; }
-        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 30px; border: 1px solid #dee2e6; width: 90%; max-width: 500px; border-radius: 8px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .close-button { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; }
-        .close-button:hover, .close-button:focus { color: #343a40; text-decoration: none; cursor: pointer; }
-        .modal-content h2 { margin-top: 0; margin-bottom: 1.5rem; text-align: center; border: none; }
-        .modal-form .form-group { margin-bottom: 1rem; text-align: left; }
-        .modal-form label { margin-bottom: 5px; font-size: 0.95rem; display: block; font-weight: 600; color: #495057;}
-        .modal-form input[type="text"], .modal-form input[type="email"], .modal-form input[type="password"], .modal-form select { width: 100%; padding: 0.75rem; font-size: 0.95rem; border-radius: 6px; border: 1px solid #ced4da; box-sizing: border-box; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
-        .modal-form input:focus, .modal-form select:focus { border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
-        .modal-form button { margin-top: 1.5rem; width: 100%; padding: 0.75rem; background-color: #0d6efd; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color 0.3s ease; }
-        .modal-form button:hover { background-color: #0b5ed7; }
-        .password-note { font-size: 0.85rem; color: #6c757d; margin-top: 0.25rem; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; line-height: 1.6; color: #2c3e50; min-height: 100vh; padding-bottom: 3rem; }
 
+        .navbar { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); padding: 1.2rem 2.5rem; box-shadow: 0 4px 24px rgba(0,0,0,0.12); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .navbar-brand { font-size: 1.6rem; font-weight: 800; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; letter-spacing: -0.5px; }
+        .navbar-right { display: flex; align-items: center; gap: 1.5rem; }
+        .home-link { text-decoration: none; color: #667eea; font-weight: 600; padding: 0.6rem 1.2rem; border-radius: 8px; transition: all 0.3s ease; background-color: rgba(102, 126, 234, 0.08); }
+        .home-link:hover { background-color: rgba(102, 126, 234, 0.15); transform: translateY(-1px); }
+        .logout-button { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 0.65rem 1.4rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(245,87,108,0.25); }
+        .logout-button:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(245,87,108,0.35); }
+
+        .container { max-width: 1300px; margin: 2.5rem auto; padding: 0 1.5rem; }
+        .main-card { background-color: #ffffff; border-radius: 20px; box-shadow: 0 20px 80px rgba(0,0,0,0.18); overflow: hidden; animation: slideUp 0.6s ease; }
+        @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .page-header { padding: 3rem 3rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; position: relative; overflow: hidden; }
+        .page-header::before { content: ''; position: absolute; top: -50%; right: -10%; width: 400px; height: 400px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+        .page-header h1 { margin: 0; font-size: 2.4rem; font-weight: 800; position: relative; z-index: 1; letter-spacing: -0.5px; }
+        .page-header p { margin: 0.75rem 0 0; font-size: 1.05rem; opacity: 0.95; position: relative; z-index: 1; }
+
+        .tabs-container { background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%); border-bottom: 2px solid #e9ecef; padding: 0 2.5rem; display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: thin; }
+        .tabs-container::-webkit-scrollbar { height: 4px; }
+        .tabs-container::-webkit-scrollbar-track { background: #f1f3f5; }
+        .tabs-container::-webkit-scrollbar-thumb { background: #adb5bd; border-radius: 2px; }
+        .tab-button { background: none; border: none; padding: 1.2rem 1.8rem; cursor: pointer; font-size: 1rem; font-weight: 600; color: #6c757d; border-bottom: 3px solid transparent; transition: all 0.3s ease; white-space: nowrap; position: relative; }
+        .tab-button:hover { color: #667eea; background-color: rgba(102, 126, 234, 0.06); }
+        .tab-button.active { color: #667eea; border-bottom-color: #667eea; }
+
+        .tab-content { display: none; padding: 3rem; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h2 { color: #2c3e50; margin: 0 0 2rem 0; padding-bottom: 1rem; border-bottom: 3px solid #667eea; font-weight: 700; font-size: 1.6rem; }
+        h3 { color: #34495e; margin: 2.5rem 0 1.2rem; font-size: 1.2rem; font-weight: 700; }
+
+        .controls-area { margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 2px solid #f1f3f5; display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .create-link, .test-button { display: inline-block; color: #fff; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0.8rem 1.8rem; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(102,126,234,0.3); border: none; cursor: pointer; }
+        .create-link:hover, .test-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+        .test-button { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); box-shadow: 0 4px 16px rgba(79,172,254,0.3); }
+        .test-button:hover { box-shadow: 0 6px 20px rgba(79,172,254,0.4); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.95rem; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        th, td { padding: 16px 18px; text-align: left; vertical-align: middle; }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.8px; }
+        td { border-bottom: 1px solid #f1f3f5; }
+        tbody tr { transition: all 0.2s ease; }
+        tbody tr:hover { background: linear-gradient(to right, rgba(102,126,234,0.04) 0%, rgba(118,75,162,0.04) 100%); }
+        .actions button, .actions a { margin-right: 8px; padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.85em; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s ease; text-decoration: none; display: inline-block; }
+        .edit-button { color: #fff; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); box-shadow: 0 2px 8px rgba(79,172,254,0.3); }
+        .edit-button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(79,172,254,0.4); }
+        .delete-link { color: #fff; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); box-shadow: 0 2px 8px rgba(245,87,108,0.3); }
+        .delete-link:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245,87,108,0.4); }
+
+        .form-group { margin-bottom: 1.8rem; }
+        label { display: block; margin-bottom: 0.7rem; font-weight: 600; color: #34495e; font-size: 1rem; }
+        label.inline-label { display: inline-block; margin-bottom: 0; vertical-align: middle; }
+        input[type="text"], input[type="email"], input[type="password"], input[type="url"], textarea, select { width: 100%; padding: 0.95rem 1.1rem; border: 2px solid #e0e6ed; border-radius: 10px; box-sizing: border-box; font-size: 0.98rem; transition: all 0.3s ease; background-color: #f8f9fa; font-family: inherit; }
+        input:focus, textarea:focus, select:focus { border-color: #667eea; background-color: #ffffff; outline: 0; box-shadow: 0 0 0 4px rgba(102,126,234,0.1); }
+        textarea { min-height: 140px; resize: vertical; font-family: Consolas, monaco, monospace; line-height: 1.5; }
+
+        .save-button { display: inline-block; padding: 1rem 2.5rem; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #2c3e50; border: none; border-radius: 10px; cursor: pointer; font-size: 1.05rem; font-weight: 700; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(67,233,123,0.35); margin-top: 1.5rem; }
+        .save-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67,233,123,0.45); }
+
+        .description { font-size: 0.9rem; color: #6c757d; margin-top: 0.6rem; line-height: 1.6; }
+        code { background-color: #e9ecef; padding: 0.25em 0.5em; border-radius: 4px; font-size: 88%; color: #e83e8c; font-family: Consolas, monaco, monospace; }
+
+        .message, .error-message { padding: 1.3rem 1.7rem; border-radius: 10px; margin: 1.5rem 0; font-size: 0.95rem; border-left: 5px solid; animation: slideIn 0.4s ease; font-weight: 500; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        .error-message { background-color: #fff5f5; color: #c53030; border-left-color: #f5576c; }
+        .message { background-color: #f0fdf4; color: #15803d; border-left-color: #43e97b; }
+
+        .switch { position: relative; display: inline-block; width: 64px; height: 36px; vertical-align: middle; }
+        .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%); transition: .4s; border-radius: 36px; }
+        .slider:before { position: absolute; content: ""; height: 28px; width: 28px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        input:checked + .slider { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        input:focus + .slider { box-shadow: 0 0 4px rgba(102,126,234,0.5); }
+        input:checked + .slider:before { transform: translateX(28px); }
+        .enable-label { margin-left: 12px; font-weight: 600; color: #2c3e50; font-size: 1.05rem; cursor: pointer; vertical-align: middle; }
+
+        .toggle-section { background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%); border-radius: 12px; padding: 1.8rem; margin-bottom: 2.5rem; border: 2px solid rgba(102,126,234,0.15); }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(44, 62, 80, 0.75); backdrop-filter: blur(4px); padding: 1rem; animation: fadeIn 0.3s ease; }
+        .modal-content { background-color: #ffffff; margin: 2% auto; padding: 2.5rem; border: none; width: 95%; max-width: 650px; border-radius: 16px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.35); animation: slideUp 0.4s ease; max-height: 90vh; overflow-y: auto; }
+        .close-button { color: #adb5bd; position: absolute; top: 18px; right: 24px; font-size: 32px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; line-height: 1; }
+        .close-button:hover { color: #495057; transform: rotate(90deg); }
+        .modal-content h2 { margin: 0 0 2rem 0; text-align: center; color: #2c3e50; font-size: 1.7rem; border-bottom: 3px solid #667eea; padding-bottom: 1rem; font-weight: 700; }
+        .modal-form .form-group { margin-bottom: 1.5rem; text-align: left; }
+        .modal-form label { margin-bottom: 0.7rem; font-size: 0.95rem; display: block; font-weight: 600; color: #34495e; }
+        .modal-form input[type="text"], .modal-form input[type="email"], .modal-form input[type="password"], .modal-form select { width: 100%; padding: 0.9rem 1.1rem; font-size: 0.98rem; border-radius: 10px; border: 2px solid #e0e6ed; transition: all 0.3s ease; background-color: #f8f9fa; }
+        .modal-form input:focus, .modal-form select:focus { border-color: #667eea; background-color: #ffffff; outline: 0; box-shadow: 0 0 0 4px rgba(102,126,234,0.1); }
+        .modal-form button { margin-top: 2rem; width: 100%; padding: 1rem; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #2c3e50; border: none; border-radius: 10px; cursor: pointer; font-size: 1.05rem; font-weight: 700; transition: all 0.3s ease; box-shadow: 0 4px 16px rgba(67,233,123,0.35); }
+        .modal-form button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67,233,123,0.45); }
+        .password-note { font-size: 0.85rem; color: #6c757d; margin-top: 0.5rem; font-style: italic; }
+
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 1rem; padding: 1rem; }
+            .page-header { padding: 2rem 1.5rem 1.5rem; }
+            .page-header h1 { font-size: 1.8rem; }
+            .tabs-container { padding: 0 1rem; }
+            .tab-button { padding: 1rem 1.2rem; font-size: 0.9rem; }
+            .tab-content { padding: 1.5rem; }
+            .container { padding: 0 0.5rem; }
+            .controls-area { flex-direction: column; align-items: stretch; }
+            table { font-size: 0.85rem; display: block; overflow-x: auto; }
+            th, td { padding: 12px 10px; }
+            .actions button, .actions a { margin: 2px; padding: 0.45rem 0.85rem; font-size: 0.75em; }
+            .modal-content { padding: 2rem 1.5rem; }
+        }
     </style>
 </head>
 <body>
 
-<!-- Admin Navbar -->
 <nav class="navbar">
-    <a class="navbar-brand" th:href="@{/admin}">Admin Panel</a>
-    <ul class="navbar-nav">
-        <li><a class="nav-link" th:href="@{/home}">Home (App)</a></li>
-        <li><a class="nav-link active" th:href="@{/admin}">User Management</a></li>
-        <li><a class="nav-link" th:href="@{/admin/configure-oauth}">OAuth/OIDC</a></li>
-        <li><a class="nav-link" th:href="@{/admin/configure-jwt}">JWT</a></li>
-        <li><a class="nav-link" th:href="@{/admin/configure-saml}">SAML</a></li>
-        <li>
-            <form th:action="@{/logout}" method="post" style="margin:0;">
-                <button type="submit" class="logout-button">Logout</button>
-            </form>
-        </li>
-    </ul>
+    <a class="navbar-brand" th:href="@{/admin}">Admin Control Center</a>
+    <div class="navbar-right">
+        <a class="home-link" th:href="@{/home}">Home</a>
+        <form th:action="@{/logout}" method="post" style="margin:0;">
+            <button type="submit" class="logout-button">Logout</button>
+        </form>
+    </div>
 </nav>
 
 <div class="container">
-    <h1>User Management</h1>
+    <div class="main-card">
+        <div class="page-header">
+            <h1>Admin Control Center</h1>
+            <p>Manage users, authentication protocols, and system configuration</p>
+        </div>
 
-    <div class="controls-area">
-        <!-- Ensure this link points to the correct controller method -->
-        <a th:href="@{/admin/users/new}" class="create-link">Create New User</a>
+        <div class="tabs-container">
+            <button class="tab-button active" onclick="openTab(event, 'users')">User Management</button>
+            <button class="tab-button" onclick="openTab(event, 'oauth')">OAuth/OIDC</button>
+            <button class="tab-button" onclick="openTab(event, 'jwt')">JWT Configuration</button>
+            <button class="tab-button" onclick="openTab(event, 'saml')">SAML Configuration</button>
+        </div>
+
+        <!-- ======================= -->
+        <!-- USER MANAGEMENT TAB     -->
+        <!-- ======================= -->
+        <div id="users" class="tab-content active">
+            <h2>User Management</h2>
+
+            <div class="controls-area">
+                <!-- Corrected onclick function name -->
+                <button class="create-link" onclick="openCreateUserModal()">Create New User</button>
+            </div>
+
+            <div th:if="${successMessage}" class="message" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="error-message" th:text="${errorMessage}"></div>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Display Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="user : ${users}" th:id="'user-row-' + ${user.id}">
+                    <td th:text="${user.id}" th:id="'user-id-' + ${user.id}">1</td>
+                    <td th:text="${user.displayName}" th:id="'user-displayname-' + ${user.id}">Test User</td>
+                    <td th:text="${user.email}" th:id="'user-email-' + ${user.id}">test@example.com</td>
+                    <td th:text="${user.role}" th:id="'user-role-' + ${user.id}">USER</td>
+                    <td class="actions">
+                        <button type="button" class="edit-button" th:onclick="'openEditModal(' + ${user.id} + ')'">Edit</button>
+                        <a th:href="@{/admin/users/delete/{id}(id=${user.id})}"
+                           class="delete-link"
+                           onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(users)}">
+                    <td colspan="5" style="text-align:center; padding: 24px; color: #6c757d; font-style: italic;">No users found. Create your first user to get started.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ======================= -->
+        <!-- OAUTH/OIDC TAB          -->
+        <!-- ======================= -->
+        <div id="oauth" class="tab-content">
+            <h2>OAuth 2.0 / OIDC Configuration</h2>
+
+            <!-- th:object MUST match the object from AdminController -->
+            <form class="config-form" th:action="@{/admin/save-oauth}" th:object="${oauthConfig}" method="post">
+                <input type="hidden" th:field="*{protocolType}" th:value="${T(com.example.demo.model.ProtocolType).OIDC}" />
+                <input type="hidden" th:if="*{id != null}" th:field="*{id}" />
+
+                <div class="toggle-section">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0.8rem;">
+                        <label class="switch">
+                            <input type="checkbox" id="oidcEnabled" name="enabled" value="true" th:checked="*{enabled}">
+                            <span class="slider round"></span>
+                        </label>
+                        <label class="enable-label" for="oidcEnabled">Enable OIDC Login Button</label>
+                    </div>
+                    <p class="description" style="margin-left: 76px;">Controls whether the 'Login with SSO (OIDC)' button appears on the login page.</p>
+                </div>
+
+                <h3>Provider Settings</h3>
+                <div class="form-group">
+                    <label for="oidcClientId">Client ID</label>
+                    <input type="text" id="oidcClientId" th:field="*{clientId}" placeholder="Enter OIDC Client ID" />
+                </div>
+                <div class="form-group">
+                    <label for="oidcClientSecret">Client Secret</label>
+                    <input type="text" id="oidcClientSecret" th:field="*{clientSecret}" placeholder="Enter OIDC Client Secret" />
+                </div>
+                <div class="form-group">
+                    <label for="oidcIssuerUri">Issuer URI</label>
+                    <input type="url" id="oidcIssuerUri" th:field="*{issuerUri}" placeholder="e.g., https://idp.example.com/oauth2/default" />
+                    <p class="description">Used for automatic discovery of endpoints. Leave blank if using manual endpoints.</p>
+                </div>
+                <div class="form-group">
+                    <label for="oidcScope">Scopes</label>
+                    <input type="text" id="oidcScope" th:field="*{scope}" placeholder="e.g., openid, email, profile" />
+                    <p class="description">Comma-separated list of scopes.</p>
+                </div>
+                <p class="description">Your Redirect URI for this flow is typically: <code>http://localhost:8080/login/oauth2/code/{registrationId}</code></p>
+
+                <h3>Manual Endpoint Configuration (Optional)</h3>
+                <div class="form-group">
+                    <label for="oidcAuthUri">Authorization URI</label>
+                    <input type="url" id="oidcAuthUri" th:field="*{authorizationUri}" placeholder="Enter Authorization Endpoint URL" />
+                </div>
+                <div class="form-group">
+                    <label for="oidcTokenUri">Token URI</label>
+                    <input type="url" id="oidcTokenUri" th:field="*{tokenUri}" placeholder="Enter Token Endpoint URL" />
+                </div>
+                <div class="form-group">
+                    <label for="oidcUserInfoUri">User Info URI</label>
+                    <input type="url" id="oidcUserInfoUri" th:field="*{userInfoUri}" placeholder="Enter UserInfo Endpoint URL" />
+                </div>
+                <div class="form-group">
+                    <label for="oidcJwkSetUri">JWK Set URI</label>
+                    <input type="url" id="oidcJwkSetUri" th:field="*{jwkSetUri}" placeholder="Enter JWKS Endpoint URL" />
+                </div>
+                <div class="form-group">
+                    <label for="oidcUserNameAttr">User Name Attribute</label>
+                    <input type="text" id="oidcUserNameAttr" th:field="*{userNameAttribute}" placeholder="e.g., email or sub" />
+                    <p class="description">The attribute in the UserInfo response containing the unique user identifier.</p>
+                </div>
+
+                <div style="text-align: center;">
+                    <button type="submit" class="save-button">Save OAuth/OIDC Configuration</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ======================= -->
+        <!-- MANUAL JWT TAB          -->
+        <!-- ======================= -->
+        <div id="jwt" class="tab-content">
+            <h2>Manual JWT Flow Configuration</h2>
+
+            <!-- th:object MUST match the object from AdminController -->
+            <form class="config-form" th:action="@{/admin/save-jwt}" th:object="${jwtConfig}" method="post">
+                <input type="hidden" th:field="*{protocolType}" th:value="${T(com.example.demo.model.ProtocolType).JWT}" />
+                <input type="hidden" th:if="*{id != null}" th:field="*{id}" />
+
+                <div class="toggle-section">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0.8rem;">
+                        <label class="switch">
+                            <input type="checkbox" id="jwtEnabled" name="enabled" value="true" th:checked="*{enabled}">
+                            <span class="slider round"></span>
+                        </label>
+                        <label class="enable-label" for="jwtEnabled">Enable Manual JWT Login Button</label>
+                    </div>
+                    <p class="description" style="margin-left: 76px;">Controls whether the 'Login with SSO (JWT)' button appears on the login page.</p>
+                </div>
+
+                <p class="description">Configure the settings for the manual JWT validation flow.</p>
+
+                <div class="form-group">
+                    <label for="jwtSsoUrl">Provider SSO URL</label>
+                    <input type="url" id="jwtSsoUrl" th:field="*{jwtSsoUrl}" placeholder="Enter JWT SSO initiation URL" />
+                </div>
+                <div class="form-group">
+                    <label for="jwtClientId">Client ID</label>
+                    <input type="text" id="jwtClientId" th:field="*{clientId}" placeholder="Enter Client ID for this JWT app" />
+                </div>
+                <div class="form-group">
+                    <label for="jwtClientSecret">Client Secret (if applicable)</label>
+                    <input type="text" id="jwtClientSecret" th:field="*{clientSecret}" placeholder="Enter Client Secret for this JWT app" />
+                </div>
+                <div class="form-group">
+                    <label for="jwtRedirectUri">Your Application's Redirect URI</label>
+                    <input type="url" id="jwtRedirectUri" th:field="*{jwtRedirectUri}" placeholder="e.g., http://localhost:8080/login/jwt/callback" />
+                </div>
+                <div class="form-group">
+                    <label for="jwtCertificateContent">Provider's Public Certificate (PEM Format)</label>
+                    <textarea id="jwtCertificateContent" th:field="*{jwtCertificateContent}" rows="7" placeholder="Paste certificate content including -----BEGIN CERTIFICATE----- and -----END CERTIFICATE-----"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="jwtIssuerUri">Expected Issuer Claim in JWT</label>
+                    <input type="url" id="jwtIssuerUri" th:field="*{issuerUri}" placeholder="Enter expected 'iss' value in the received JWT" />
+                </div>
+
+                <div style="text-align: center;">
+                    <button type="submit" class="save-button">Save JWT Configuration</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ======================= -->
+        <!-- SAML TAB                -->
+        <!-- ======================= -->
+        <div id="saml" class="tab-content">
+            <h2>SAML 2.0 Service Provider Configuration</h2>
+
+            <!-- th:object MUST match the object from AdminController -->
+            <form class="config-form" th:action="@{/admin/save-saml}" th:object="${samlConfig}" method="post">
+                <input type="hidden" th:field="*{protocolType}" th:value="${T(com.example.demo.model.ProtocolType).SAML}" />
+                <input type="hidden" th:if="*{id != null}" th:field="*{id}" />
+
+                <div class="toggle-section">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0.8rem;">
+                        <label class="switch">
+                            <input type="checkbox" id="samlEnabled" name="enabled" value="true" th:checked="*{enabled}">
+                            <span class="slider round"></span>
+                        </label>
+                        <label class="enable-label" for="samlEnabled">Enable SAML Login Button</label>
+                    </div>
+                    <p class="description" style="margin-left: 76px;">Controls whether the 'Login with SSO (SAML)' button appears on the login page.</p>
+                </div>
+
+                <p class="description">Configure settings for connecting to a SAML Identity Provider (IdP).</p>
+
+                <h3>Identity Provider (IdP) Details</h3>
+                <div class="form-group">
+                    <label for="samlIdpEntityId">IdP Entity ID</label>
+                    <input type="text" id="samlIdpEntityId" th:field="*{idpEntityId}" placeholder="Enter SAML IdP Entity ID (Issuer)" />
+                </div>
+                <div class="form-group">
+                    <label for="samlIdpSsoUrl">IdP Single Sign-On URL (Redirect Binding)</label>
+                    <input type="url" id="samlIdpSsoUrl" th:field="*{idpSsoUrl}" placeholder="Enter SAML IdP SSO URL for HTTP-Redirect" />
+                </div>
+                <div class="form-group">
+                    <label for="samlIdpCertificate">IdP Signing Certificate (PEM Format)</label>
+                    <textarea id="samlIdpCertificate" th:field="*{idpCertificateContent}" rows="7" placeholder="Paste IdP's Base64 encoded X.509 certificate here..."></textarea>
+                </div>
+
+                <h3>Your Application (Service Provider - SP) Details</h3>
+                <div class="form-group">
+                    <label for="samlSpEntityId">Your Application (SP) Entity ID</label>
+                    <input type="text" id="samlSpEntityId" th:field="*{spEntityId}" placeholder="e.g., http://localhost:8080/saml2/service-provider-metadata/miniorange-saml" />
+                    <p class="description">Unique identifier for your application. Must be registered with the IdP.</p>
+                </div>
+                <p class="description">Your Assertion Consumer Service (ACS) URL to register with the IdP is: <br/><code>http://localhost:8080/login/saml2/sso/miniorange-saml</code></p>
+
+                <h3>Attribute Mapping (Optional)</h3>
+                <div class="form-group">
+                    <label for="samlAttrEmail">SAML Attribute for Email</label>
+                    <input type="text" id="samlAttrEmail" th:field="*{samlAttrEmail}" placeholder="e.g., mail or emailaddress" />
+                </div>
+                <div class="form-group">
+                    <label for="samlAttrUsername">SAML Attribute for Display Name</label>
+                    <input type="text" id="samlAttrUsername" th:field="*{samlAttrUsername}" placeholder="e.g., displayName or cn" />
+                </div>
+
+                <div style="text-align: center;">
+                    <button type="submit" class="save-button">Save SAML Configuration</button>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <!-- Display Flash Messages -->
-    <div th:if="${successMessage}" class="message" th:text="${successMessage}"></div>
-    <div th:if="${errorMessage}" class="error-message" th:text="${errorMessage}"></div>
-
-    <!-- User Table -->
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Display Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        <!-- Added IDs to cells for easier JS access -->
-        <tr th:each="user : ${users}" th:id="'user-row-' + ${user.id}">
-            <td th:text="${user.id}" th:id="'user-id-' + ${user.id}">1</td>
-            <td th:text="${user.displayName}" th:id="'user-displayname-' + ${user.id}">Test User</td>
-            <td th:text="${user.email}" th:id="'user-email-' + ${user.id}">test@example.com</td>
-            <td th:text="${user.role}" th:id="'user-role-' + ${user.id}">USER</td>
-            <td class="actions">
-                <!-- Pass user ID directly to JS function -->
-                <button type="button" class="edit-button" th:onclick="'openEditModal(' + ${user.id} + ')'">Edit</button>
-                <a th:href="@{/admin/users/delete/{id}(id=${user.id})}"
-                   class="delete-link"
-                   onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
-            </td>
-        </tr>
-        <tr th:if="${#lists.isEmpty(users)}">
-            <td colspan="5" style="text-align:center; padding: 20px; color: #6c757d;">No other users found.</td>
-        </tr>
-        </tbody>
-    </table>
 </div>
 
-<!-- EDIT USER MODAL HTML -->
+<!-- ======================= -->
+<!-- MODALS                  -->
+<!-- ======================= -->
+
+<!-- Edit User Modal -->
 <div id="editUserModal" class="modal">
     <div class="modal-content">
         <span class="close-button" onclick="closeEditModal()">&times;</span>
@@ -137,14 +400,12 @@
             <div class="form-group">
                 <label for="editRole">Role:</label>
                 <select id="editRole" name="role" required>
-                    <!-- Options populated by Thymeleaf from controller -->
                     <option th:each="roleOpt : ${allRoles}"
                             th:value="${roleOpt.name()}"
                             th:text="${roleOpt}">USER</option>
                 </select>
             </div>
-            <!-- ADDED PASSWORD FIELDS -->
-            <hr style="margin: 1.5rem 0;">
+            <hr style="margin: 1.5rem 0; border: none; border-top: 2px solid #f1f3f5;">
             <div class="form-group">
                 <label for="editNewPassword">New Password:</label>
                 <input type="password" id="editNewPassword" name="newPassword" />
@@ -154,75 +415,156 @@
                 <label for="editConfirmPassword">Confirm New Password:</label>
                 <input type="password" id="editConfirmPassword" name="confirmPassword" />
             </div>
-            <!-- END ADDED PASSWORD FIELDS -->
-
             <button type="submit">Update User</button>
         </form>
     </div>
 </div>
 
-<!-- JAVASCRIPT for Modal -->
+<!-- Create User Modal -->
+<div id="createUserModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeCreateUserModal()">&times;</span>
+        <h2>Create New User</h2>
+        <!-- Bind to 'newUser' object from controller -->
+        <form id="createUserForm" th:action="@{/admin/users/create}" th:object="${newUser}" method="post" class="modal-form">
+            <div class="form-group">
+                <label for="createDisplayName">Display Name:</label>
+                <input type="text" id="createDisplayName" th:field="*{displayName}" required />
+            </div>
+            <div class="form-group">
+                <label for="createEmail">Email:</label>
+                <input type="email" id="createEmail" th:field="*{email}" required />
+            </div>
+            <div class="form-group">
+                <label for="createPassword">Password:</label>
+                <input type="password" id="createPassword" th:field="*{password}" required />
+            </div>
+            <div class="form-group">
+                <label for="createConfirmPassword">Confirm Password:</label>
+                <input type="password" id="createConfirmPassword" name="confirmPassword" required />
+            </div>
+            <div class="form-group">
+                <label for="createRole">Role:</label>
+                <select id="createRole" th:field="*{role}" required>
+                    <option th:each="roleOpt : ${allRoles}"
+                            th:value="${roleOpt.name()}"
+                            th:text="${roleOpt}">USER</option>
+                </select>
+            </div>
+            <button type="submit">Create User</button>
+        </form>
+    </div>
+</div>
+
+<!-- ======================= -->
+<!-- JAVASCRIPT BLOCK (THIS IS THE FIX) -->
+<!-- ======================= -->
 <script>
-    const modal = document.getElementById('editUserModal');
-    const form = document.getElementById('editUserForm');
-    const userIdInput = document.getElementById('editUserId');
-    const displayNameInput = document.getElementById('editDisplayName');
-    const emailInput = document.getElementById('editEmail');
-    const roleSelect = document.getElementById('editRole');
-    const newPasswordInput = document.getElementById('editNewPassword');
-    const confirmPasswordInput = document.getElementById('editConfirmPassword');
+    // --- Tab-handling logic ---
+    function openTab(evt, tabName) {
+        // Get all elements with class="tab-content" and hide them
+        const tabContents = document.getElementsByClassName('tab-content');
+        for (let i = 0; i < tabContents.length; i++) {
+            tabContents[i].style.display = 'none'; // Use style.display
+            tabContents[i].classList.remove('active');
+        }
 
+        // Get all elements with class="tab-button" and remove the "active" class
+        const tabButtons = document.getElementsByClassName('tab-button');
+        for (let i = 0; i < tabButtons.length; i++) {
+            tabButtons[i].classList.remove('active');
+        }
+
+        // Show the current tab, and add an "active" class to the button that opened the tab
+        const currentTab = document.getElementById(tabName);
+        if (currentTab) {
+            currentTab.style.display = 'block';
+            currentTab.classList.add('active');
+        }
+        if (evt && evt.currentTarget) {
+            evt.currentTarget.classList.add('active');
+        }
+
+        // Update URL hash without jumping
+        try {
+             history.pushState(null, null, '#' + tabName);
+        } catch(e) {
+            // Fallback for older browsers or sandboxed environments
+            window.location.hash = '#' + tabName;
+        }
+    }
+
+    // --- Modal Logic ---
+    const editModal = document.getElementById('editUserModal');
+    const createModal = document.getElementById('createUserModal');
+
+    // Edit Modal
     function openEditModal(userId) {
-        console.log("Opening modal for user ID:", userId);
+        if (!editModal) { console.error("Edit modal not found"); return; }
 
-        // Get data directly from table cells using IDs
         const displayName = document.getElementById('user-displayname-' + userId)?.innerText;
         const email = document.getElementById('user-email-' + userId)?.innerText;
-        const role = document.getElementById('user-role-' + userId)?.innerText; // Role name (e.g., 'USER', 'ADMIN')
+        const role = document.getElementById('user-role-' + userId)?.innerText;
 
         if (displayName === undefined || email === undefined || role === undefined) {
-             console.error("Could not find user data in table for ID:", userId);
-             alert("Error retrieving user data."); // Simple feedback
-             return;
+            alert("Error retrieving user data.");
+            return;
         }
 
-        console.log("Found data:", { userId, displayName, email, role });
+        document.getElementById('editUserId').value = userId || '';
+        document.getElementById('editDisplayName').value = displayName || '';
+        document.getElementById('editEmail').value = email || '';
+        document.getElementById('editRole').value = role || 'USER';
+        document.getElementById('editNewPassword').value = '';
+        document.getElementById('editConfirmPassword').value = '';
 
-        // Populate the form
-        if (userIdInput) userIdInput.value = userId || '';
-        if (displayNameInput) displayNameInput.value = displayName || '';
-        if (emailInput) emailInput.value = email || '';
-        if (roleSelect) {
-             roleSelect.value = role || 'USER'; // Set selected option based on text content
-             console.log("Set role select to:", roleSelect.value);
-        } else {
-            console.error("Role select element not found");
-        }
-         // Clear password fields when opening
-         if(newPasswordInput) newPasswordInput.value = '';
-         if(confirmPasswordInput) confirmPasswordInput.value = '';
-
-
-        // Show the modal
-        if (modal) modal.style.display = 'block';
-        else console.error("Modal element not found");
+        editModal.style.display = 'block';
     }
 
     function closeEditModal() {
-        if (modal) modal.style.display = 'none';
-         // Clear password fields when closing
-         if(newPasswordInput) newPasswordInput.value = '';
-         if(confirmPasswordInput) confirmPasswordInput.value = '';
+        if (editModal) editModal.style.display = 'none';
     }
 
-    // Close modal if user clicks outside
+    // Create Modal
+    function openCreateUserModal() {
+        if (!createModal) { console.error("Create modal not found"); return; }
+        // Clear the form fields
+        const createForm = document.getElementById('createUserForm');
+        if(createForm) createForm.reset();
+
+        createModal.style.display = 'block';
+    }
+
+    function closeCreateUserModal() {
+        if (createModal) createModal.style.display = 'none';
+    }
+
+    // Close modals if user clicks outside
     window.onclick = function(event) {
-        if (event.target === modal) {
+        if (event.target === editModal) {
             closeEditModal();
         }
+        if (event.target === createModal) {
+            closeCreateUserModal();
+        }
     }
+
+    // --- Logic to open tab based on URL hash on page load ---
+    document.addEventListener("DOMContentLoaded", function() {
+        // Set default tab (users)
+        document.getElementById('users').style.display = 'block';
+
+        const hash = window.location.hash; // e.g., #jwt
+        if (hash) {
+            const tabName = hash.substring(1); // 'jwt'
+            const tabButton = document.querySelector(`.tab-button[onclick*="'${tabName}'"]`);
+            if (tabButton) {
+                tabButton.click(); // Simulate a click on the correct tab
+            }
+        }
+    });
+
 </script>
 
 </body>
 </html>
-

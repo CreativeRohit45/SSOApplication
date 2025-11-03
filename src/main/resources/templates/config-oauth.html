@@ -115,6 +115,15 @@
           cursor: pointer; /* Make text clickable to toggle */
           vertical-align: middle;
         }
+        .button.test-button {
+            background-color: #17a2b8; /* A nice info/test color */
+            margin-top: 10px;
+            display: inline-block; /* Make the <a> tag behave like a button */
+            text-decoration: none;
+        }
+        .button.test-button:hover {
+            background-color: #138496;
+        }
     </style>
 </head>
 <body>
@@ -159,6 +168,9 @@
             <p class="description" style="margin-top: 0.5rem; padding-left: 70px;">Controls whether the 'Login with SSO (OIDC)' button appears on the login page.</p>
         </div>
 
+        <a th:href="@{/admin/test-oidc}" target="_blank" class="button test-button">
+            Test OIDC Connection
+        </a>
 
         <h2>Provider Settings (e.g., miniOrange OIDC)</h2>
         <p class="description">Configure how your application connects to the OIDC/OAuth2 provider.</p>

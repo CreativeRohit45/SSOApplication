@@ -58,6 +58,13 @@ public class AuthController {
         return "home";
     }
 
+    @GetMapping("/oauth-test-results")
+    public String showOidcTestResults() {
+        // This just renders the blank HTML page.
+        // The data will be added by the success handler.
+        return "oauth-test-results";
+    }
+
     @GetMapping("/login")
     public String loginPage(Model model) {
         logger.debug("Accessing login page");
