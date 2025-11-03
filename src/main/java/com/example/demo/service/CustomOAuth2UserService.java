@@ -13,6 +13,8 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.demo.config.TenantContext; // Import
+import com.example.demo.model.Tenant; // Import
 
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +31,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         logger.info(">>> Entering loadUser method...");
+
+        Tenant tenant = TenantContext.getCurrentTenant();
+        if (tenant == null) {
+            logger.error("SSO login failed, no tenant context found.");
+            throw new OAuth2AuthenticationException("Invalid tenant.");
+        }
 
         OAuth2User oauthUser = super.loadUser(userRequest);
         Map<String, Object> attributes = oauthUser.getAttributes();
@@ -49,8 +57,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         logger.info("Using '{}' as the principal name attribute", userNameAttributeName);
 
         // --- SIMPLIFIED LOGIC FOR DEBUGGING ---
-        logger.info(">>> Attempting DB lookup for email: {}", email);
-        Optional<User> userOptional = userRepository.findByEmail(email);
+        logger.info(">>> Attempting DB lookup for email: {} in tenant: {}", email, tenant.getId());
+        Optional<User> userOptional = userRepository.findByEmailAndTenant(email, tenant);
 
         User user; // Declare user variable outside the blocks
 
@@ -94,7 +102,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             newUser.setDisplayName(displayNameToSet);
             newUser.setRole(Role.USER);
             newUser.setPassword("SSO_USER_NO_PASSWORD_" + System.currentTimeMillis());
-
+            newUser.setTenant(tenant);
             try {
                 logger.info("Attempting to save new user...");
                 user = userRepository.save(newUser); // Assign the saved user to the 'user' variable

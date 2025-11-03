@@ -96,9 +96,12 @@ public class SecurityConfig {
                                 "/register", "/login",
                                 "/sso/jwt/login", "/login/jwt/callback",
                                 "/css/**", "/js/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN") // This now means "Customer Admin"
-                        .requestMatchers("/super-admin/**").hasRole("ADMIN") // We need to differentiate
-                        .requestMatchers("/home", "/oauth-test-results").hasAnyRole("USER", "ADMIN")
+
+                        // --- UPDATED ROLES ---
+                        .requestMatchers("/super-admin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/admin/**").hasRole("CUSTOMER_ADMIN")
+                        .requestMatchers("/home", "/oauth-test-results").hasAnyRole("CUSTOMER_ADMIN", "END_USER")
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

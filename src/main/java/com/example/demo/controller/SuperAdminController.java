@@ -25,11 +25,13 @@ public class SuperAdminController {
     @GetMapping
     public String dashboard(Model model) {
         model.addAttribute("tenants", tenantRepository.findAll());
+        // This query fulfills "only Customer_Admin should be visible"
+        model.addAttribute("customerAdmins", userRepository.findByRole(Role.CUSTOMER_ADMIN));
         return "super-admin-dashboard"; // You must create this HTML page
     }
 
     @PostMapping("/create-tenant")
-    public String createTenant(@RequestParam String companyName,
+    public String createTenant(//@RequestParam String companyName, // Removed
                                @RequestParam String subdomain,
                                @RequestParam String adminEmail,
                                @RequestParam String adminPassword) {
@@ -37,14 +39,19 @@ public class SuperAdminController {
         // 1. Create the Tenant
         Tenant tenant = new Tenant();
         tenant.setSubdomain(subdomain);
+        // You can add back a companyName field if you want
         tenantRepository.save(tenant);
 
         // 2. Create the Customer Admin for this tenant
         User customerAdmin = new User();
         customerAdmin.setEmail(adminEmail);
-        customerAdmin.setDisplayName(companyName + " Admin");
+
+        // --- FIX: Use subdomain since companyName was removed ---
+        customerAdmin.setDisplayName(subdomain + " Admin");
         customerAdmin.setPassword(passwordEncoder.encode(adminPassword));
-        customerAdmin.setRole(Role.ADMIN);
+
+        // --- SET NEW ROLE ---
+        customerAdmin.setRole(Role.CUSTOMER_ADMIN);
         customerAdmin.setTenant(tenant); // Link to the new tenant
         userRepository.save(customerAdmin);
 

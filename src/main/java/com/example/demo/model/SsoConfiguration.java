@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "sso_configuration", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"protocol_type"}) // Ensure only one config per type
+        @UniqueConstraint(columnNames = {"protocol_type", "tenant_id"}) // Ensure only one config per type
 })
 public class SsoConfiguration {
 

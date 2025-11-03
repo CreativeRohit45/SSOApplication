@@ -56,13 +56,11 @@ public class AdminController {
         String currentUsername = currentUserDetails.getUsername();
 
         // 2. Get all users EXCEPT the currently logged-in admin
-        List<User> users = userRepository.findByTenant(tenant).stream()
-                .filter(user -> !user.getEmail().equals(currentUserDetails.getUsername()))
-                .collect(Collectors.toList());
+        List<User> users = userRepository.findByTenantAndRole(tenant, Role.END_USER);
         model.addAttribute("users", users);
 
         // 3. Add roles for the modal dropdowns
-        model.addAttribute("allRoles", Role.values());
+        model.addAttribute("allRoles", new Role[]{Role.END_USER});
 
         // 4. Add empty user object for the "Create User" modal
         model.addAttribute("newUser", new User()); // 'newUser' must match th:object in create modal
@@ -92,49 +90,30 @@ public class AdminController {
         boolean isEnabled = webRequest.getParameter("enabled") != null;
         config.setEnabled(isEnabled);
         config.setProtocolType(ProtocolType.OIDC);
-        ssoConfigurationService.save(config);
-        Tenant tenant = TenantContext.getCurrentTenant();
-        config.setTenant(tenant); // Explicitly set the tenant on save
+        // Tenant is set inside the service, so just call save ONCE.
         ssoConfigurationService.save(config);
         redirectAttributes.addFlashAttribute("successMessage", "OAuth/OIDC configuration saved successfully.");
-        return "redirect:/admin#oauth"; // Redirect back to admin page, hash to the oauth tab
+        return "redirect:/admin#oauth";
     }
 
     @PostMapping("/save-jwt")
     public String saveJwtConfig(@ModelAttribute("jwtConfig") SsoConfiguration config, WebRequest webRequest, RedirectAttributes redirectAttributes) {
         boolean isEnabled = webRequest.getParameter("enabled") != null;
-        config.setEnabled(isEnabled);
         config.setProtocolType(ProtocolType.JWT);
-        ssoConfigurationService.save(config);
-        Tenant tenant = TenantContext.getCurrentTenant();
-        config.setTenant(tenant); // Explicitly set the tenant on save
+        // Tenant is set inside the service
         ssoConfigurationService.save(config);
         redirectAttributes.addFlashAttribute("successMessage", "JWT configuration saved successfully.");
-        return "redirect:/admin#jwt"; // Redirect back to admin page, hash to the jwt tab
+        return "redirect:/admin#jwt";
     }
 
     @PostMapping("/save-saml")
     public String saveSamlConfig(@ModelAttribute("samlConfig") SsoConfiguration config, WebRequest webRequest, RedirectAttributes redirectAttributes) {
         boolean isEnabled = webRequest.getParameter("enabled") != null;
-        config.setEnabled(isEnabled);
-
-        // Check if SAML enum value exists before setting
-        try {
-            ProtocolType samlType = ProtocolType.valueOf("SAML");
-            config.setProtocolType(samlType);
-            ssoConfigurationService.save(config);
-            Tenant tenant = TenantContext.getCurrentTenant();
-            config.setTenant(tenant); // Explicitly set the tenant on save
-            ssoConfigurationService.save(config);
-            redirectAttributes.addFlashAttribute("successMessage", "SAML configuration saved successfully.");
-        } catch (IllegalArgumentException e) {
-            logger.error("Could not save SAML config, ProtocolType 'SAML' does not exist.");
-            redirectAttributes.addFlashAttribute("errorMessage", "Could not save SAML config: ProtocolType 'SAML' is not enabled in the application.");
-        } catch (Exception e) {
-            logger.error("Error saving SAML config: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "Error saving SAML configuration: " + e.getMessage());
-        }
-        return "redirect:/admin#saml"; // Redirect back to admin page, hash to the saml tab
+        config.setProtocolType(ProtocolType.SAML);
+        // Tenant is set inside the service
+        ssoConfigurationService.save(config);
+        redirectAttributes.addFlashAttribute("successMessage", "SAML configuration saved successfully.");
+        return "redirect:/admin#saml";
     }
 
     // --- User CRUD Operations ---
@@ -221,21 +200,18 @@ public class AdminController {
         Tenant tenant = TenantContext.getCurrentTenant();
         user.setTenant(tenant);
 
+        // --- FIX: Only one check is needed ---
         if (userRepository.findByEmailAndTenant(user.getEmail(), tenant).isPresent()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Email is already in use for this tenant.");
+            redirectAttributes.addFlashAttribute("errorMessage", "Create User Failed: Email is already in use for this tenant.");
             return "redirect:/admin";
         }
         if (!user.getPassword().equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Create User Failed: Passwords do not match.");
             return "redirect:/admin"; // Redirect back
         }
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Create User Failed: Email is already in use.");
-            return "redirect:/admin"; // Redirect back
-        }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        // Role is set from form
+        user.setRole(Role.END_USER);
         try {
             userRepository.save(user);
             redirectAttributes.addFlashAttribute("successMessage", "User created successfully.");

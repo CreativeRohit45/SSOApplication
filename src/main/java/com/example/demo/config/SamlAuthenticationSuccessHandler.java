@@ -19,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.saml2.provider.service.authentication.DefaultSaml2AuthenticatedPrincipal;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import com.example.demo.config.TenantContext; // Import
+import com.example.demo.model.Tenant; // Import
 
 import java.io.IOException;
 import java.util.Collection;
@@ -80,6 +82,14 @@ public class SamlAuthenticationSuccessHandler implements AuthenticationSuccessHa
      * Checks if a SAML user exists in the local DB. If not, creates them.
      */
     private void provisionSamlUser(Authentication authentication, String email) {
+
+        Tenant tenant = TenantContext.getCurrentTenant();
+        if (tenant == null) {
+            logger.error("SAML login failed, no tenant context found.");
+            // Can't throw exception here, just log and fail
+            return;
+        }
+
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         User user;
@@ -89,7 +99,8 @@ public class SamlAuthenticationSuccessHandler implements AuthenticationSuccessHa
             user = new User();
             user.setEmail(email);
             user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-            user.setRole(Role.USER); // Default role
+            user.setRole(Role.END_USER); // Default role
+            user.setTenant(tenant);
 
             if (authentication.getPrincipal() instanceof DefaultSaml2AuthenticatedPrincipal principal) {
                 // Read config from DB
