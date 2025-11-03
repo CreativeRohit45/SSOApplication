@@ -17,6 +17,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.context.request.WebRequest; // Import
+import com.example.demo.config.TenantContext;
+import com.example.demo.model.Tenant;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,12 +46,18 @@ public class AdminController {
     public String adminDashboard(Model model, @AuthenticationPrincipal UserDetails currentUserDetails) {
         logger.debug("Accessing admin dashboard (User Management)");
 
+        Tenant tenant = TenantContext.getCurrentTenant();
+        if (tenant == null) {
+            // This is a Super Admin, but they're on the wrong page.
+            // Or, it's an error. Redirect to super admin login or dashboard.
+            return "redirect:/login"; // Or "/super-admin"
+        }
         // 1. Get current user's email
         String currentUsername = currentUserDetails.getUsername();
 
         // 2. Get all users EXCEPT the currently logged-in admin
-        List<User> users = userRepository.findAll().stream()
-                .filter(user -> !user.getEmail().equals(currentUsername))
+        List<User> users = userRepository.findByTenant(tenant).stream()
+                .filter(user -> !user.getEmail().equals(currentUserDetails.getUsername()))
                 .collect(Collectors.toList());
         model.addAttribute("users", users);
 
@@ -85,6 +93,9 @@ public class AdminController {
         config.setEnabled(isEnabled);
         config.setProtocolType(ProtocolType.OIDC);
         ssoConfigurationService.save(config);
+        Tenant tenant = TenantContext.getCurrentTenant();
+        config.setTenant(tenant); // Explicitly set the tenant on save
+        ssoConfigurationService.save(config);
         redirectAttributes.addFlashAttribute("successMessage", "OAuth/OIDC configuration saved successfully.");
         return "redirect:/admin#oauth"; // Redirect back to admin page, hash to the oauth tab
     }
@@ -94,6 +105,9 @@ public class AdminController {
         boolean isEnabled = webRequest.getParameter("enabled") != null;
         config.setEnabled(isEnabled);
         config.setProtocolType(ProtocolType.JWT);
+        ssoConfigurationService.save(config);
+        Tenant tenant = TenantContext.getCurrentTenant();
+        config.setTenant(tenant); // Explicitly set the tenant on save
         ssoConfigurationService.save(config);
         redirectAttributes.addFlashAttribute("successMessage", "JWT configuration saved successfully.");
         return "redirect:/admin#jwt"; // Redirect back to admin page, hash to the jwt tab
@@ -108,6 +122,9 @@ public class AdminController {
         try {
             ProtocolType samlType = ProtocolType.valueOf("SAML");
             config.setProtocolType(samlType);
+            ssoConfigurationService.save(config);
+            Tenant tenant = TenantContext.getCurrentTenant();
+            config.setTenant(tenant); // Explicitly set the tenant on save
             ssoConfigurationService.save(config);
             redirectAttributes.addFlashAttribute("successMessage", "SAML configuration saved successfully.");
         } catch (IllegalArgumentException e) {
@@ -200,6 +217,14 @@ public class AdminController {
                              RedirectAttributes redirectAttributes) {
 
         logger.debug("Processing create user request for email: {}", user.getEmail());
+
+        Tenant tenant = TenantContext.getCurrentTenant();
+        user.setTenant(tenant);
+
+        if (userRepository.findByEmailAndTenant(user.getEmail(), tenant).isPresent()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Email is already in use for this tenant.");
+            return "redirect:/admin";
+        }
         if (!user.getPassword().equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Create User Failed: Passwords do not match.");
             return "redirect:/admin"; // Redirect back

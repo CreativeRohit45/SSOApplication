@@ -29,6 +29,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Tenant tenant;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -40,6 +44,9 @@ public class User implements UserDetails {
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+
+    public Tenant getTenant() { return tenant; }
+    public void setTenant(Tenant tenant) { this.tenant = tenant; }
 
     public void setPassword(String password) { this.password = password; }
 

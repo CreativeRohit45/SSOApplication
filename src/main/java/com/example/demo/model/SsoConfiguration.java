@@ -61,6 +61,10 @@ public class SsoConfiguration {
     private String samlAttrUsername;
     // --- END SAML FIELDS ---
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = false)
+    private Tenant tenant;
+
     // --- Getters and Setters ---
     // (OIDC and JWT Getters/Setters)
     public Long getId() { return id; }
@@ -107,4 +111,7 @@ public class SsoConfiguration {
     public void setSamlAttrEmail(String samlAttrEmail) { this.samlAttrEmail = samlAttrEmail; }
     public String getSamlAttrUsername() { return samlAttrUsername; }
     public void setSamlAttrUsername(String samlAttrUsername) { this.samlAttrUsername = samlAttrUsername; }
+
+    public Tenant getTenant() { return tenant; }
+    public void setTenant(Tenant tenant) { this.tenant = tenant; }
 }
