@@ -46,7 +46,7 @@ public class TenantFilter extends OncePerRequestFilter {
 
         // --- 1. PRODUCTION DOMAIN ---
         // Replace this with your app's base URL from Render
-        String baseHost = "my-sso-app.onrender.com"; // <-- IMPORTANT: UPDATE THIS
+        String baseHost = "ssoapplication.onrender.com";
 
         if (serverName != null) {
             if (serverName.equals(baseHost)) {
