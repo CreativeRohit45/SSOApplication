@@ -3,8 +3,8 @@ package com.example.demo.controller;
 import com.example.demo.config.TenantContext;
 import com.example.demo.model.*;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.service.SsoConfigurationService; // Import
-import jakarta.servlet.http.HttpServletRequest;
+import com.example.demo.service.SsoConfigurationService;
+import jakarta.servlet.http.HttpServletRequest; // <-- THIS IMPORT IS ALREADY HERE, BUT IT'S NOW USED IN A NEW PLACE
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +23,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes; // Import
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder; // <-- 1. ADD THIS NEW IMPORT
 
 import java.io.IOException;
 
@@ -57,7 +58,8 @@ public class JwtSsoController {
      * Redirects the user to the miniOrange manual JWT SSO login page.
      */
     @GetMapping("/sso/jwt/login")
-    public String redirectToMiniOrangeJwtSso(RedirectAttributes redirectAttributes) { // Added RedirectAttributes
+    public String redirectToMiniOrangeJwtSso(RedirectAttributes redirectAttributes,
+                                             HttpServletRequest request) { // <-- 2. ADD HttpServletRequest request HERE
 
         // --- Fetch JWT config from DB ---
         SsoConfiguration jwtConfig = ssoConfigurationService.findByProtocolType(ProtocolType.JWT).orElse(null);
@@ -68,11 +70,23 @@ public class JwtSsoController {
             return "redirect:/login";
         }
 
-        // Build the URL with client_id and redirect_uri from the DB config
+        // --- 3. REPLACE THE OLD URL-BUILDING LOGIC WITH THIS ---
+        // Build the dynamic redirect_uri from the current request
+        // e.g., "https://pratik.my-sso-app.onrender.com/login/jwt/callback"
+        String dynamicRedirectUri = ServletUriComponentsBuilder.fromRequest(request)
+                .replacePath("/login/jwt/callback") // Change the path
+                .replaceQuery(null) // Remove any query params
+                .build()
+                .toUriString(); // This will correctly use "https:"
+
+        logger.info("Dynamic JWT Redirect URI built: {}", dynamicRedirectUri);
+
+        // Build the URL with client_id from DB and DYNAMIC redirect_uri
         String url = UriComponentsBuilder.fromHttpUrl(jwtConfig.getJwtSsoUrl())
                 .queryParam("client_id", jwtConfig.getClientId())
-                .queryParam("redirect_uri", jwtConfig.getJwtRedirectUri())
+                .queryParam("redirect_uri", dynamicRedirectUri) // <-- Use the new dynamic URL
                 .toUriString();
+        // --- END OF CHANGES ---
 
         logger.info("Redirecting to miniOrange JWT SSO: {}", url);
         return "redirect:" + url;

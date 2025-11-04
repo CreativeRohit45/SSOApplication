@@ -43,14 +43,31 @@ public class TenantFilter extends OncePerRequestFilter {
     }
 
     private String extractSubdomain(String serverName) {
-        // Simple logic for "name.localhost"
-        if (serverName != null && serverName.endsWith(".localhost")) {
-            return serverName.substring(0, serverName.indexOf(".localhost"));
+
+        // --- 1. PRODUCTION DOMAIN ---
+        // Replace this with your app's base URL from Render
+        String baseHost = "my-sso-app.onrender.com"; // <-- IMPORTANT: UPDATE THIS
+
+        if (serverName != null) {
+            if (serverName.equals(baseHost)) {
+                // This is the super-admin login (e.g., my-sso-app.onrender.com)
+                return null;
+            }
+
+            String productionSuffix = "." + baseHost;
+            if (serverName.endsWith(productionSuffix)) {
+                // This is a tenant (e.g., "pratik.my-sso-app.onrender.com")
+                return serverName.substring(0, serverName.indexOf(productionSuffix)); // "pratik"
+            }
+
+            // --- 2. LOCALHOST (for testing) ---
+            String localSuffix = ".localhost";
+            if (serverName.endsWith(localSuffix)) {
+                return serverName.substring(0, serverName.indexOf(localSuffix)); // "rohit45"
+            }
         }
-        // Add logic for production domain (e.g., "name.xecurify.com")
-        // else if (serverName != null && serverName.endsWith(".xecurify.com")) {
-        //    return serverName.substring(0, serverName.indexOf(".xecurify.com"));
-        // }
-        return null; // No subdomain (e.g., "localhost" -> Super Admin login)
+
+        // No subdomain (e.g., "localhost" or base render URL)
+        return null;
     }
 }
