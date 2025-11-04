@@ -1,20 +1,21 @@
 package com.example.demo.config;
 
 import com.example.demo.model.Tenant;
-import com.example.demo.repository.TenantRepository; // You need to create this repository
+import com.example.demo.repository.TenantRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.annotation.Order;
+import org.springframework.core.Ordered; // <-- IMPORT THIS
+import org.springframework.core.annotation.Order; // <-- IMPORT THIS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
 @Component
-@Order(1) // Run this filter BEFORE Spring Security
+@Order(Ordered.HIGHEST_PRECEDENCE) // <-- THIS IS THE FIX (changed from @Order(1))
 public class TenantFilter extends OncePerRequestFilter {
 
     @Autowired
