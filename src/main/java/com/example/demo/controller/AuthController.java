@@ -3,7 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.config.TenantContext;
 import com.example.demo.model.*;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.service.SsoConfigurationService; // Ensure this is imported
+import com.example.demo.service.SsoConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.security.core.Authentication;
-import org.springframework.ui.Model;
 
 import java.util.List;
 
@@ -34,20 +33,29 @@ public class AuthController {
     private SsoConfigurationService ssoConfigurationService;
 
     @GetMapping("/home")
-    public String homePage(Model model, Authentication authentication) { // <-- Add parameters
+    public String homePage(Model model, Authentication authentication) {
 
         if (authentication != null && authentication.isAuthenticated()) {
-            String email = authentication.getName(); // This works for all login types
+            String email = authentication.getName();
 
-            // Find the user in your database (who was just provisioned by your success handler)
-            User user = userRepository.findByEmail(email).orElse(null);
+            // --- THIS IS THE FIX ---
+            Tenant tenant = TenantContext.getCurrentTenant();
+            User user = null;
+
+            if (tenant != null) {
+                // Find the user *within their tenant*
+                user = userRepository.findByEmailAndTenant(email, tenant).orElse(null);
+            } else if (authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"))) {
+                // Or, if they are a super admin, find them with a null tenant
+                user = userRepository.findByEmailAndTenantIsNull(email).orElse(null);
+            }
+            // --- END FIX ---
+
 
             if (user != null) {
-                // Add the display name from your database to the model
                 model.addAttribute("displayName", user.getDisplayName());
                 logger.debug("Added displayName '{}' to model for user '{}'", user.getDisplayName(), email);
             } else {
-                // Fallback just in case
                 model.addAttribute("displayName", email);
                 logger.warn("Could not find user in database for email: {}. Using email as display name.", email);
             }
@@ -58,20 +66,15 @@ public class AuthController {
 
     @GetMapping("/oauth-test-results")
     public String showOidcTestResults() {
-        // This just renders the blank HTML page.
-        // The data will be added by the success handler.
         return "oauth-test-results";
     }
 
     @GetMapping("/login")
     public String loginPage(Model model) {
         logger.debug("Accessing login page");
-        // Fetch enabled SSO configurations
         List<SsoConfiguration> enabledConfigs = ssoConfigurationService.findAllEnabled();
         logger.debug("Found {} enabled SSO configurations", enabledConfigs.size());
 
-        // Set boolean flags for the view based on protocol type
-        // Ensure getProtocolType() method exists and returns ProtocolType enum
         boolean isOidcEnabled = enabledConfigs.stream()
                 .anyMatch(config -> config.getProtocolType() == ProtocolType.OIDC);
         boolean isJwtEnabled = enabledConfigs.stream()
@@ -85,7 +88,7 @@ public class AuthController {
 
         logger.debug("Login page flags - OIDC: {}, JWT: {}, SAML: {}", isOidcEnabled, isJwtEnabled);
 
-        return "login"; // Renders login.html
+        return "login";
     }
 
     @GetMapping("/register")
@@ -107,9 +110,7 @@ public class AuthController {
         }
 
         if (!user.getPassword().equals(confirmPassword)) {
-
             model.addAttribute("error", "Passwords do not match");
-
             model.addAttribute("user", user);
             return "register";
         }
@@ -121,8 +122,8 @@ public class AuthController {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(Role.END_USER); // <-- FIX
-        user.setTenant(tenant); // <-- FIX
+        user.setRole(Role.END_USER);
+        user.setTenant(tenant);
 
         userRepository.save(user);
 

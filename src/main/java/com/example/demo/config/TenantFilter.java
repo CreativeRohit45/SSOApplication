@@ -15,7 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE) // <-- THIS IS THE FIX (changed from @Order(1))
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class TenantFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -25,8 +25,8 @@ public class TenantFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String serverName = request.getServerName(); // "rohit45.localhost"
-        String subdomain = extractSubdomain(serverName); // "rohit45"
+        String serverName = request.getServerName();
+        String subdomain = extractSubdomain(serverName);
 
         if (subdomain != null) {
             // Find the tenant by its subdomain
@@ -45,19 +45,19 @@ public class TenantFilter extends OncePerRequestFilter {
     private String extractSubdomain(String serverName) {
 
         // --- 1. PRODUCTION DOMAIN ---
-        // Replace this with your app's base URL from Render
-        String baseHost = "ssoapplication.onrender.com";
+        // This is the URL from your Render dashboard screenshot
+        String baseHost = "ssoapplication.onrender.com"; // <-- THIS IS THE FIX
 
         if (serverName != null) {
             if (serverName.equals(baseHost)) {
-                // This is the super-admin login (e.g., my-sso-app.onrender.com)
+                // This is the super-admin login
                 return null;
             }
 
             String productionSuffix = "." + baseHost;
             if (serverName.endsWith(productionSuffix)) {
-                // This is a tenant (e.g., "pratik.my-sso-app.onrender.com")
-                return serverName.substring(0, serverName.indexOf(productionSuffix)); // "pratik"
+                // This is a tenant (e.g., "rohit45.ssoapplication.onrender.com")
+                return serverName.substring(0, serverName.indexOf(productionSuffix)); // "rohit45"
             }
 
             // --- 2. LOCALHOST (for testing) ---
